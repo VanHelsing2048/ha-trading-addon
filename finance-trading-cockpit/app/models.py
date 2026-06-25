@@ -21,6 +21,14 @@ class Quote(BaseModel):
     source: str
 
 
+class SymbolSearchResult(BaseModel):
+    symbol: str
+    name: str | None = None
+    exchange: str | None = None
+    quote_type: str | None = None
+    sector: str | None = None
+
+
 class HistoryPoint(BaseModel):
     date: str
     close: float

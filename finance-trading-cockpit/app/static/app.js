@@ -7,8 +7,15 @@ const queryInput = document.querySelector("#news-query");
 const filterInput = document.querySelector("#watchlist-filter");
 const rangeSelect = document.querySelector("#history-range");
 const summaryEl = document.querySelector("#summary");
+const symbolInput = document.querySelector("#symbol");
+const nameInput = document.querySelector("#name");
+const sectorInput = document.querySelector("#sector");
+const symbolOptions = document.querySelector("#symbol-options");
+const suggestionsEl = document.querySelector("#symbol-suggestions");
 
 let overviewState = [];
+let symbolResults = [];
+let suggestTimer;
 
 async function request(path, options) {
   const response = await fetch(path, {
@@ -71,22 +78,26 @@ function insightCard(item) {
   const changeClass = signal.quote.change_percent >= 0 ? "Bullish" : "Bearish";
   const subtitle = [ticker.name, ticker.sector].filter(Boolean).map(escapeHtml).join(" - ");
   const historyJson = escapeHtml(JSON.stringify(history));
+  const sourceLabel = signal.quote.source === "yahoo" ? "Yahoo Finance" : signal.quote.source;
+  const chartMarkup = history.length
+    ? `<canvas class="chart" width="640" height="220" data-history="${historyJson}" aria-label="Andamento ${escapeHtml(ticker.symbol)}"></canvas>`
+    : `<div class="chart chart-empty">Storico reale non disponibile</div>`;
   return `
     <article class="signal insight-card">
       <header>
         <div>
           <div class="symbol">${escapeHtml(ticker.symbol)}</div>
-          <div class="muted">${subtitle || "Titolo monitorato"}</div>
+          <div class="muted">${subtitle || "Titolo monitorato"} - ${escapeHtml(sourceLabel)}</div>
         </div>
         <span class="stance ${escapeHtml(signal.stance)}">${escapeHtml(signal.stance)}</span>
       </header>
-      <canvas class="chart" width="640" height="220" data-history="${historyJson}" aria-label="Andamento ${escapeHtml(ticker.symbol)}"></canvas>
+      ${chartMarkup}
       <div class="metric-row">
         <div class="metric"><span class="muted">Prezzo</span><strong>${formatPrice(signal.quote.price)}</strong></div>
         <div class="metric"><span class="muted">Oggi</span><strong class="${changeClass}">${signal.quote.change_percent}%</strong></div>
         <div class="metric"><span class="muted">Score</span><strong>${signal.score}</strong></div>
       </div>
-      <div class="reason-line">${signal.reasons.map(escapeHtml).join(" · ")}</div>
+      <div class="reason-line">${signal.reasons.map(escapeHtml).join(" - ")}</div>
       <button class="remove" data-symbol="${escapeHtml(ticker.symbol)}" type="button">Rimuovi</button>
     </article>
   `;
@@ -154,15 +165,17 @@ async function loadNews(query = "") {
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(form);
+  const selected = symbolResults.find((item) => item.symbol.toUpperCase() === String(data.get("symbol")).toUpperCase());
   await request("api/tickers", {
     method: "POST",
     body: JSON.stringify({
       symbol: data.get("symbol"),
-      name: data.get("name") || null,
-      sector: data.get("sector") || null,
+      name: data.get("name") || selected?.name || null,
+      sector: data.get("sector") || selected?.sector || selected?.quote_type || null,
     }),
   });
   form.reset();
+  hideSuggestions();
   await loadSignals();
 });
 
@@ -183,6 +196,70 @@ searchButton.addEventListener("click", async () => {
 
 filterInput.addEventListener("input", renderOverview);
 rangeSelect.addEventListener("change", loadSignals);
+symbolInput.addEventListener("input", () => {
+  clearTimeout(suggestTimer);
+  suggestTimer = setTimeout(loadSymbolSuggestions, 220);
+});
+symbolInput.addEventListener("change", applySelectedSymbol);
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".symbol-field")) hideSuggestions();
+});
+suggestionsEl.addEventListener("click", (event) => {
+  const option = event.target.closest("[data-symbol]");
+  if (!option) return;
+  const item = symbolResults.find((result) => result.symbol === option.dataset.symbol);
+  if (!item) return;
+  symbolInput.value = item.symbol;
+  nameInput.value = item.name || "";
+  sectorInput.value = item.sector || item.quote_type || "";
+  hideSuggestions();
+});
+
+async function loadSymbolSuggestions() {
+  const query = symbolInput.value.trim();
+  if (query.length < 2) {
+    symbolResults = [];
+    symbolOptions.innerHTML = "";
+    hideSuggestions();
+    return;
+  }
+
+  try {
+    symbolResults = await request(`api/search?q=${encodeURIComponent(query)}&limit=8`);
+    symbolOptions.innerHTML = symbolResults
+      .map((item) => `<option value="${escapeHtml(item.symbol)}">${escapeHtml(item.name || item.exchange || "")}</option>`)
+      .join("");
+    suggestionsEl.innerHTML = symbolResults.length
+      ? symbolResults.map(symbolSuggestion).join("")
+      : `<div class="suggestion-empty">Nessun titolo trovato</div>`;
+    suggestionsEl.hidden = false;
+  } catch {
+    symbolResults = [];
+    suggestionsEl.innerHTML = `<div class="suggestion-empty">Ricerca titoli non disponibile</div>`;
+    suggestionsEl.hidden = false;
+  }
+}
+
+function symbolSuggestion(item) {
+  const meta = [item.name, item.exchange, item.quote_type].filter(Boolean).join(" - ");
+  return `
+    <button class="suggestion" type="button" data-symbol="${escapeHtml(item.symbol)}">
+      <strong>${escapeHtml(item.symbol)}</strong>
+      <span>${escapeHtml(meta)}</span>
+    </button>
+  `;
+}
+
+function applySelectedSymbol() {
+  const selected = symbolResults.find((item) => item.symbol.toUpperCase() === symbolInput.value.trim().toUpperCase());
+  if (!selected) return;
+  nameInput.value = nameInput.value || selected.name || "";
+  sectorInput.value = sectorInput.value || selected.sector || selected.quote_type || "";
+}
+
+function hideSuggestions() {
+  suggestionsEl.hidden = true;
+}
 
 function drawCharts() {
   document.querySelectorAll(".chart").forEach((canvas) => {

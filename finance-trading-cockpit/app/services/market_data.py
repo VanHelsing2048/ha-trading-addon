@@ -1,8 +1,17 @@
 import hashlib
+import os
 import random
-from datetime import date, timedelta
+import time
+from datetime import UTC, date, datetime, timedelta
 
-from app.models import HistoryPoint, Quote
+import httpx
+
+from app.models import HistoryPoint, Quote, SymbolSearchResult
+
+
+YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+YAHOO_SEARCH_URL = "https://query2.finance.yahoo.com/v1/finance/search"
+HTTP_TIMEOUT = 8.0
 
 
 def _stable_rng(symbol: str) -> random.Random:
@@ -11,6 +20,51 @@ def _stable_rng(symbol: str) -> random.Random:
 
 
 async def get_quote(symbol: str) -> Quote:
+    if os.environ.get("DATA_MODE", "live") == "demo":
+        return _demo_quote(symbol)
+
+    return await _get_yahoo_quote(symbol)
+
+
+async def get_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
+    if os.environ.get("DATA_MODE", "live") == "demo":
+        return await _demo_history(symbol, days)
+
+    return await _get_yahoo_history(symbol, days)
+
+
+async def search_symbols(query: str, limit: int = 8) -> list[SymbolSearchResult]:
+    clean_query = query.strip()
+    if len(clean_query) < 2:
+        return []
+
+    async with httpx.AsyncClient(timeout=HTTP_TIMEOUT, follow_redirects=True) as client:
+        response = await client.get(
+            YAHOO_SEARCH_URL,
+            params={"q": clean_query, "quotesCount": limit, "newsCount": 0},
+            headers={"User-Agent": "ha-trading-addon/0.2"},
+        )
+        response.raise_for_status()
+        payload = response.json()
+
+    results = []
+    for item in payload.get("quotes", [])[:limit]:
+        symbol = item.get("symbol")
+        if not symbol:
+            continue
+        results.append(
+            SymbolSearchResult(
+                symbol=symbol,
+                name=item.get("shortname") or item.get("longname"),
+                exchange=item.get("exchange"),
+                quote_type=item.get("quoteType"),
+                sector=item.get("sector"),
+            )
+        )
+    return results
+
+
+def _demo_quote(symbol: str) -> Quote:
     rng = _stable_rng(symbol.upper())
     base_price = rng.uniform(20, 700)
     change = rng.uniform(-4.5, 4.5)
@@ -25,7 +79,7 @@ async def get_quote(symbol: str) -> Quote:
     )
 
 
-async def get_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
+async def _demo_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
     clean_symbol = symbol.upper()
     rng = _stable_rng(f"{clean_symbol}:{days}")
     quote = await get_quote(clean_symbol)
@@ -48,3 +102,97 @@ async def get_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
 
     points[-1] = HistoryPoint(date=today.isoformat(), close=quote.price)
     return points
+
+
+async def _get_yahoo_quote(symbol: str) -> Quote:
+    payload = await _get_yahoo_chart(symbol, "5d", "1d")
+    result = _first_chart_result(payload)
+    meta = result.get("meta", {})
+    price = meta.get("regularMarketPrice")
+    previous_close = meta.get("previousClose") or meta.get("chartPreviousClose")
+    volume = meta.get("regularMarketVolume") or 0
+
+    if price is None:
+        closes = _valid_closes(result)
+        if not closes:
+            raise ValueError(f"No live quote available for {symbol}")
+        price = closes[-1]
+
+    if previous_close:
+        change_percent = ((float(price) - float(previous_close)) / float(previous_close)) * 100
+    else:
+        closes = _valid_closes(result)
+        base = closes[-2] if len(closes) > 1 else price
+        change_percent = ((float(price) - float(base)) / float(base)) * 100 if base else 0
+
+    return Quote(
+        symbol=symbol.upper(),
+        price=round(float(price), 2),
+        change_percent=round(change_percent, 2),
+        volume=int(volume or 0),
+        source="yahoo",
+    )
+
+
+async def _get_yahoo_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
+    days = max(7, min(days, 365))
+    period2 = int(time.time())
+    period1 = period2 - (days + 10) * 24 * 60 * 60
+    payload = await _get_yahoo_chart(
+        symbol,
+        None,
+        "1d",
+        extra_params={"period1": period1, "period2": period2},
+    )
+    result = _first_chart_result(payload)
+    timestamps = result.get("timestamp", [])
+    closes = result.get("indicators", {}).get("quote", [{}])[0].get("close", [])
+
+    points = []
+    for timestamp, close in zip(timestamps, closes, strict=False):
+        if close is None:
+            continue
+        day = datetime.fromtimestamp(timestamp, tz=UTC).date().isoformat()
+        points.append(HistoryPoint(date=day, close=round(float(close), 2)))
+
+    if not points:
+        raise ValueError(f"No historical prices available for {symbol}")
+    return points[-days:]
+
+
+async def _get_yahoo_chart(
+    symbol: str,
+    range_value: str | None,
+    interval: str,
+    extra_params: dict | None = None,
+) -> dict:
+    params = {"interval": interval}
+    if range_value:
+        params["range"] = range_value
+    if extra_params:
+        params.update(extra_params)
+
+    async with httpx.AsyncClient(timeout=HTTP_TIMEOUT, follow_redirects=True) as client:
+        response = await client.get(
+            YAHOO_CHART_URL.format(symbol=symbol.upper()),
+            params=params,
+            headers={"User-Agent": "ha-trading-addon/0.2"},
+        )
+        response.raise_for_status()
+        return response.json()
+
+
+def _first_chart_result(payload: dict) -> dict:
+    chart = payload.get("chart", {})
+    error = chart.get("error")
+    if error:
+        raise ValueError(error.get("description") or "Yahoo chart error")
+    results = chart.get("result") or []
+    if not results:
+        raise ValueError("Yahoo returned no chart result")
+    return results[0]
+
+
+def _valid_closes(result: dict) -> list[float]:
+    closes = result.get("indicators", {}).get("quote", [{}])[0].get("close", [])
+    return [float(close) for close in closes if close is not None]

@@ -13,6 +13,8 @@ Dashboard/add-on sperimentale per seguire titoli finanziari, leggere notizie gio
 - Endpoint per aggiungere/rimuovere ticker
 - Grafici andamento a 30/90/180/365 giorni
 - Filtro rapido della watchlist
+- Autocomplete ticker con ricerca simboli reali
+- Quote e storico prezzi live tramite provider Yahoo Finance non ufficiale
 - Score iniziale basato su prezzo, variazione giornaliera e notizie
 - Icona add-on in `finance-trading-cockpit/icon.png`
 - Dashboard Lovelace di esempio in `home-assistant/dashboard-example.yaml`
@@ -63,8 +65,10 @@ Convenzione versioni:
 
 La prima versione funziona anche senza chiavi API, usando dati demo. Per dati reali configura una sorgente prezzi/news nel file dell'add-on o tramite variabili ambiente:
 
-- `DATA_MODE=demo` oppure `DATA_MODE=live`
+- `DATA_MODE=live` oppure `DATA_MODE=demo`
 - `NEWS_RSS_URLS` con URL RSS separati da virgola
+
+`live` e' la modalita' predefinita per le nuove installazioni. Se un'installazione esistente mantiene `data_mode: demo` nelle opzioni Home Assistant, cambiala manualmente in `live` dalla pagina di configurazione dell'add-on.
 
 Provider reali da aggiungere nelle prossime iterazioni:
 

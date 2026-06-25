@@ -14,7 +14,11 @@
           <p>Watchlist configurabile, andamento prezzi e news giornaliere.</p>
         </div>
         <form id="ticker-form" class="add-form">
-          <input id="symbol" name="symbol" placeholder="Ticker" autocomplete="off" required />
+          <div class="symbol-field">
+            <input id="symbol" name="symbol" placeholder="Ticker" autocomplete="off" list="symbol-options" required />
+            <datalist id="symbol-options"></datalist>
+            <div id="symbol-suggestions" class="suggestions" hidden></div>
+          </div>
           <input id="name" name="name" placeholder="Nome" autocomplete="off" />
           <input id="sector" name="sector" placeholder="Settore" autocomplete="off" />
           <button type="submit">Aggiungi</button>

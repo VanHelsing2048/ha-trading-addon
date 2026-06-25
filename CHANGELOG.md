@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0
+
+- Add live symbol search/autocomplete while typing a ticker.
+- Add Yahoo Finance-backed quote and historical price provider.
+- Make live market data the default mode for new installs.
+- Stop drawing invented chart data in live mode when the remote provider is unavailable.
+- Show unavailable market data explicitly instead of silently presenting demo history.
+
 ## 0.2.3
 
 - Improve Home Assistant security profile by removing the unused host port mapping.

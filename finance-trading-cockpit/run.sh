@@ -7,7 +7,7 @@ if [ -f "$CONFIG_PATH" ]; then
   export DATA_MODE="$(python - <<'PY'
 import json
 with open('/data/options.json', 'r', encoding='utf-8') as f:
-    print(json.load(f).get('data_mode', 'demo'))
+    print(json.load(f).get('data_mode', 'live'))
 PY
 )"
   export NEWS_RSS_URLS="$(python - <<'PY'

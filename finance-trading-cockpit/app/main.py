@@ -2,8 +2,8 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.models import HistoryPoint, Signal, Ticker, TickerCreate, TickerInsight
-from app.services.market_data import get_history, get_quote
+from app.models import HistoryPoint, Quote, Signal, SymbolSearchResult, Ticker, TickerCreate, TickerInsight
+from app.services.market_data import get_history, get_quote, search_symbols
 from app.services.news import get_news
 from app.services.signals import build_signal
 from app.services.storage import add_ticker, delete_ticker, init_db, list_tickers
@@ -52,6 +52,11 @@ async def api_news(q: str | None = Query(default=None)):
     return await get_news(symbols, q)
 
 
+@app.get("/api/search", response_model=list[SymbolSearchResult])
+async def api_search(q: str = Query(min_length=2), limit: int = Query(default=8, ge=1, le=20)):
+    return await search_symbols(q, limit)
+
+
 @app.get("/api/signals", response_model=list[Signal])
 async def api_signals():
     tickers = list_tickers()
@@ -63,9 +68,12 @@ async def api_signals():
     signals = []
     for ticker in tickers:
         symbol = ticker["symbol"]
-        quote = await get_quote(symbol)
-        related_news = [item for item in all_news if symbol in item.symbols] or all_news
-        signals.append(build_signal(symbol, quote, related_news))
+        try:
+            quote = await get_quote(symbol)
+            related_news = [item for item in all_news if symbol in item.symbols] or all_news
+            signals.append(build_signal(symbol, quote, related_news))
+        except Exception as exc:
+            signals.append(_unavailable_signal(symbol, str(exc)))
     return signals
 
 
@@ -80,10 +88,14 @@ async def api_overview(days: int = Query(default=30, ge=7, le=365)):
     overview = []
     for ticker in tickers:
         symbol = ticker["symbol"]
-        quote = await get_quote(symbol)
-        related_news = [item for item in all_news if symbol in item.symbols] or all_news
-        signal = build_signal(symbol, quote, related_news)
-        history = await get_history(symbol, days)
+        try:
+            quote = await get_quote(symbol)
+            related_news = [item for item in all_news if symbol in item.symbols] or all_news
+            signal = build_signal(symbol, quote, related_news)
+            history = await get_history(symbol, days)
+        except Exception as exc:
+            signal = _unavailable_signal(symbol, str(exc))
+            history = []
         overview.append({"ticker": ticker, "signal": signal, "history": history})
     return overview
 
@@ -103,3 +115,14 @@ async def api_signal(symbol: str):
     quote = await get_quote(clean_symbol)
     news = await get_news([clean_symbol])
     return build_signal(clean_symbol, quote, news)
+
+
+def _unavailable_signal(symbol: str, reason: str) -> Signal:
+    return Signal(
+        symbol=symbol.upper(),
+        stance="Non disponibile",
+        score=0,
+        reasons=[f"Dati mercato non disponibili: {reason}"],
+        quote=Quote(symbol=symbol.upper(), price=0, change_percent=0, volume=0, source="unavailable"),
+        news=[],
+    )
