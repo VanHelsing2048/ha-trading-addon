@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.2
+
+- Remove deprecated `build.yaml` and move architecture selection into the Dockerfile.
+- Build from the Home Assistant Python base image matching `BUILD_ARCH`, fixing Raspberry Pi 4/aarch64 installs.
+- Add Home Assistant image labels directly in the Dockerfile.
+- Use plain `uvicorn` instead of `uvicorn[standard]` to reduce native dependency load on Raspberry Pi.
+
 ## 0.2.1
 
 - Fix Docker build on non-amd64 Home Assistant hosts by adding architecture-specific base images.

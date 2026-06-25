@@ -36,7 +36,7 @@ Dashboard/add-on sperimentale per seguire titoli finanziari, leggere notizie gio
 ## Aggiornamenti
 
 Home Assistant rileva gli aggiornamenti dell'add-on dal campo `version` in `finance-trading-cockpit/config.yaml`.
-La build multi-arch e' definita in `finance-trading-cockpit/build.yaml`, cosi' host `aarch64`, `amd64`, `armhf`, `armv7` e `i386` usano la base image corretta.
+La build usa `BUILD_ARCH` direttamente nel `Dockerfile`, cosi' Raspberry Pi 4 su `aarch64` usa la base image Home Assistant corretta senza `build.yaml`.
 
 Per pubblicare una nuova versione:
 
