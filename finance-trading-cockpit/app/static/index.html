@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trading Cockpit</title>
+    <link rel="stylesheet" href="static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="topbar">
+        <div>
+          <h1>Trading Cockpit</h1>
+          <p>Watchlist, news e segnali operativi informativi.</p>
+        </div>
+        <form id="ticker-form" class="add-form">
+          <input id="symbol" name="symbol" placeholder="Ticker" autocomplete="off" required />
+          <input id="name" name="name" placeholder="Nome opzionale" autocomplete="off" />
+          <button type="submit">Aggiungi</button>
+        </form>
+      </section>
+
+      <section class="toolbar">
+        <input id="news-query" placeholder="Cerca notizie giornaliere..." />
+        <button id="search-news" type="button">Cerca</button>
+        <button id="refresh" type="button">Aggiorna</button>
+      </section>
+
+      <section id="signals" class="grid"></section>
+
+      <section class="news-panel">
+        <h2>Notizie</h2>
+        <div id="news"></div>
+      </section>
+    </main>
+    <script src="static/app.js"></script>
+  </body>
+</html>

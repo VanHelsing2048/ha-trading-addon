@@ -1,0 +1,20 @@
+title: Trading Cockpit
+views:
+  - title: Mercati
+    path: trading
+    icon: mdi:chart-line
+    cards:
+      - type: iframe
+        title: Trading Cockpit
+        url: /local/finance-trading-cockpit
+        aspect_ratio: 100%
+      - type: entities
+        title: Automazioni consigliate
+        entities:
+          - entity: input_text.trading_watchlist
+            name: Watchlist
+          - entity: input_boolean.trading_news_alerts
+            name: Alert notizie
+          - entity: input_boolean.trading_price_alerts
+            name: Alert prezzo
+
