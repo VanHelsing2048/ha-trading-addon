@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.3
+
+- Improve Home Assistant security profile by removing the unused host port mapping.
+- Store the SQLite database in the add-on's private `/data` volume instead of requesting `addon_config:rw`.
+- Explicitly keep the Ingress panel admin-only.
+
 ## 0.2.2
 
 - Remove deprecated `build.yaml` and move architecture selection into the Dockerfile.

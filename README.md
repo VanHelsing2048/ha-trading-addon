@@ -9,7 +9,7 @@ Dashboard/add-on sperimentale per seguire titoli finanziari, leggere notizie gio
 - Add-on Home Assistant in `finance-trading-cockpit/`
 - Backend Python FastAPI
 - UI web leggera servita dall'add-on
-- Watchlist persistente in SQLite
+- Watchlist persistente in SQLite nel volume privato `/data` dell'add-on
 - Endpoint per aggiungere/rimuovere ticker
 - Grafici andamento a 30/90/180/365 giorni
 - Filtro rapido della watchlist
@@ -37,6 +37,13 @@ Dashboard/add-on sperimentale per seguire titoli finanziari, leggere notizie gio
 
 Home Assistant rileva gli aggiornamenti dell'add-on dal campo `version` in `finance-trading-cockpit/config.yaml`.
 La build usa `BUILD_ARCH` direttamente nel `Dockerfile`, cosi' Raspberry Pi 4 su `aarch64` usa la base image Home Assistant corretta senza `build.yaml`.
+
+## Sicurezza
+
+- L'interfaccia web e' disponibile tramite Home Assistant Ingress.
+- Non vengono esposte porte host nel `config.yaml`.
+- Non vengono richiesti privilegi, host network, Docker API, Supervisor API o accesso completo.
+- Il database resta nel volume privato `/data` dell'add-on.
 
 Per pubblicare una nuova versione:
 

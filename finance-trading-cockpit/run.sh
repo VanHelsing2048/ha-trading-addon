@@ -18,7 +18,6 @@ PY
 )"
 fi
 
-export DB_PATH="${DB_PATH:-/config/finance_trading_cockpit.sqlite3}"
+export DB_PATH="${DB_PATH:-/data/finance_trading_cockpit.sqlite3}"
 
 uvicorn app.main:app --host 0.0.0.0 --port 8099
-
