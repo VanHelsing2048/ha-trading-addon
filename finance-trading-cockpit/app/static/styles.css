@@ -8,6 +8,7 @@
   --accent: #2fb47c;
   --warn: #e0a23b;
   --bad: #e15d5d;
+  --input: #0d1115;
 }
 
 * {
@@ -22,14 +23,15 @@ body {
 }
 
 .shell {
-  width: min(1180px, calc(100% - 32px));
+  width: min(1320px, calc(100% - 32px));
   margin: 0 auto;
   padding: 28px 0 40px;
 }
 
 .topbar,
 .toolbar,
-.news-panel {
+.news-panel,
+.summary-tile {
   border: 1px solid var(--line);
   background: var(--panel);
   border-radius: 8px;
@@ -75,11 +77,12 @@ p,
 }
 
 input,
-button {
+button,
+select {
   height: 40px;
   border-radius: 6px;
   border: 1px solid var(--line);
-  background: #0d1115;
+  background: var(--input);
   color: var(--text);
   padding: 0 12px;
   font: inherit;
@@ -96,15 +99,46 @@ button {
   font-weight: 650;
 }
 
+.toolbar input {
+  flex: 1;
+}
+
+.toolbar select {
+  min-width: 130px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.summary-tile {
+  padding: 14px;
+}
+
+.summary-tile span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.summary-tile strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 24px;
+}
+
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
   gap: 14px;
   margin-top: 16px;
 }
 
 .signal {
-  min-height: 250px;
+  min-height: 420px;
   border: 1px solid var(--line);
   background: var(--panel);
   border-radius: 8px;
@@ -124,6 +158,15 @@ button {
 .symbol {
   font-size: 22px;
   font-weight: 800;
+}
+
+.chart {
+  width: 100%;
+  height: 180px;
+  border: 1px solid var(--line);
+  background: #0d1115;
+  border-radius: 6px;
+  display: block;
 }
 
 .stance {
@@ -171,6 +214,13 @@ button {
   color: var(--muted);
 }
 
+.reason-line {
+  min-height: 42px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .remove {
   margin-top: auto;
   width: 100%;
@@ -205,5 +255,12 @@ button {
     flex-direction: column;
     align-items: stretch;
   }
-}
 
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

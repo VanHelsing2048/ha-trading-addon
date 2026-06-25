@@ -11,7 +11,10 @@ Dashboard/add-on sperimentale per seguire titoli finanziari, leggere notizie gio
 - UI web leggera servita dall'add-on
 - Watchlist persistente in SQLite
 - Endpoint per aggiungere/rimuovere ticker
+- Grafici andamento a 30/90/180/365 giorni
+- Filtro rapido della watchlist
 - Score iniziale basato su prezzo, variazione giornaliera e notizie
+- Icona add-on in `finance-trading-cockpit/icon.png`
 - Dashboard Lovelace di esempio in `home-assistant/dashboard-example.yaml`
 
 ## Avvio come add-on Home Assistant
@@ -39,7 +42,14 @@ Per pubblicare una nuova versione:
 1. modifica il codice;
 2. aggiorna `version` nel `config.yaml`;
 3. aggiungi una nota in `CHANGELOG.md`;
-4. crea commit, tag Git e push.
+4. aggiorna `README.md` se cambiano installazione, configurazione o funzionalita';
+5. crea commit, tag Git e push.
+
+Convenzione versioni:
+
+- patch, esempio `0.2.1`: fix piccoli;
+- minor, esempio `0.3.0`: nuove funzionalita';
+- major, esempio `1.0.0`: cambi incompatibili o prima versione stabile.
 
 ## Configurazione provider
 

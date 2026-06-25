@@ -5,6 +5,7 @@ class TickerCreate(BaseModel):
     symbol: str = Field(min_length=1, max_length=20)
     name: str | None = Field(default=None, max_length=120)
     sector: str | None = Field(default=None, max_length=80)
+    notes: str | None = Field(default=None, max_length=500)
 
 
 class Ticker(TickerCreate):
@@ -18,6 +19,17 @@ class Quote(BaseModel):
     change_percent: float
     volume: int
     source: str
+
+
+class HistoryPoint(BaseModel):
+    date: str
+    close: float
+
+
+class TickerInsight(BaseModel):
+    ticker: Ticker
+    signal: "Signal"
+    history: list[HistoryPoint]
 
 
 class NewsItem(BaseModel):
@@ -37,3 +49,5 @@ class Signal(BaseModel):
     quote: Quote
     news: list[NewsItem]
 
+
+TickerInsight.model_rebuild()
