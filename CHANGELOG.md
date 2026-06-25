@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- Fix Docker build on non-amd64 Home Assistant hosts by adding architecture-specific base images.
+- Stop defaulting the Dockerfile to the amd64 base image.
+
 ## 0.2.0
 
 - Add configurable dashboard controls for ticker, name, sector and watchlist filtering.

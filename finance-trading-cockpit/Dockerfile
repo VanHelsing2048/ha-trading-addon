@@ -1,5 +1,7 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.20
+ARG BUILD_FROM
 FROM ${BUILD_FROM}
+
+SHELL ["/bin/ash", "-o", "pipefail", "-c"]
 
 WORKDIR /app
 
@@ -15,4 +17,3 @@ RUN chmod a+x /run.sh
 EXPOSE 8099
 
 CMD ["/run.sh"]
-
