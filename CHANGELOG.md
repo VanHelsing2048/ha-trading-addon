@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.3
+
+- Improve mobile responsiveness and remove horizontal overflow on narrow screens.
+- Make range buttons wrap into a compact grid on mobile instead of scrolling sideways.
+- Adjust ticker cards, chart metadata, metrics and news rows for small screens.
+
 ## 0.4.2
 
 - Harden the add-on security profile for Raspberry Pi deployments.
