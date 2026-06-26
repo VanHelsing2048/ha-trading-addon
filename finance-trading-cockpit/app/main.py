@@ -3,7 +3,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.models import HistoryPoint, Quote, Signal, SymbolSearchResult, Ticker, TickerCreate, TickerInsight
-from app.services.market_data import get_history, get_quote, search_symbols
+from app.services.market_data import get_history, get_history_range, get_quote, normalize_range, search_symbols
 from app.services.news import get_news
 from app.services.signals import build_signal
 from app.services.storage import add_ticker, delete_ticker, init_db, list_tickers
@@ -78,11 +78,15 @@ async def api_signals():
 
 
 @app.get("/api/overview", response_model=list[TickerInsight])
-async def api_overview(days: int = Query(default=30, ge=7, le=365)):
+async def api_overview(
+    range: str = Query(default="1M"),
+    days: int | None = Query(default=None, ge=1, le=365),
+):
     tickers = list_tickers()
     if not tickers:
         return []
 
+    chart_range = normalize_range(range if days is None else f"{days}D")
     symbols = [ticker["symbol"] for ticker in tickers]
     all_news = await get_news(symbols)
     overview = []
@@ -92,17 +96,31 @@ async def api_overview(days: int = Query(default=30, ge=7, le=365)):
             quote = await get_quote(symbol)
             related_news = [item for item in all_news if symbol in item.symbols] or all_news
             signal = build_signal(symbol, quote, related_news)
-            history = await get_history(symbol, days)
+            history = await get_history(symbol, days) if days is not None else await get_history_range(symbol, chart_range)
         except Exception as exc:
             signal = _unavailable_signal(symbol, str(exc))
             history = []
-        overview.append({"ticker": ticker, "signal": signal, "history": history})
+        overview.append(
+            {
+                "ticker": ticker,
+                "signal": signal,
+                "history": history,
+                "chart_source": signal.quote.source,
+                "chart_range": chart_range,
+            }
+        )
     return overview
 
 
 @app.get("/api/history/{symbol}", response_model=list[HistoryPoint])
-async def api_history(symbol: str, days: int = Query(default=30, ge=7, le=365)):
-    return await get_history(symbol.upper(), days)
+async def api_history(
+    symbol: str,
+    range: str = Query(default="1M"),
+    days: int | None = Query(default=None, ge=1, le=365),
+):
+    if days is not None:
+        return await get_history(symbol.upper(), days)
+    return await get_history_range(symbol.upper(), normalize_range(range))
 
 
 @app.get("/api/signals/{symbol}", response_model=Signal)

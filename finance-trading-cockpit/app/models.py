@@ -38,6 +38,8 @@ class TickerInsight(BaseModel):
     ticker: Ticker
     signal: "Signal"
     history: list[HistoryPoint]
+    chart_source: str = "unknown"
+    chart_range: str = "1M"
 
 
 class NewsItem(BaseModel):

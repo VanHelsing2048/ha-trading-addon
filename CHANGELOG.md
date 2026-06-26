@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+- Replace the generic chart selector with trading-style range buttons: today, 1 week, 1 month, 1 year and total.
+- Fetch Yahoo Finance history with range-specific intervals instead of reusing daily data for every view.
+- Show chart source, selected range and covered dates on every ticker card.
+- Add price scale labels and date labels directly on charts.
+- Add per-ticker news sections with source and openable links.
+
 ## 0.3.0
 
 - Add live symbol search/autocomplete while typing a ticker.

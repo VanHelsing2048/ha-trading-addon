@@ -33,6 +33,34 @@ async def get_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
     return await _get_yahoo_history(symbol, days)
 
 
+async def get_history_range(symbol: str, range_key: str = "1M") -> list[HistoryPoint]:
+    clean_range = normalize_range(range_key)
+    if os.environ.get("DATA_MODE", "live") == "demo":
+        demo_days = {"1D": 1, "1W": 7, "1M": 30, "1Y": 365, "ALL": 365}.get(clean_range, 30)
+        return await _demo_history(symbol, demo_days)
+
+    return await _get_yahoo_history_range(symbol, clean_range)
+
+
+def normalize_range(range_key: str) -> str:
+    clean = range_key.strip().upper()
+    aliases = {
+        "TODAY": "1D",
+        "DAY": "1D",
+        "1D": "1D",
+        "7D": "1W",
+        "1W": "1W",
+        "30D": "1M",
+        "1M": "1M",
+        "365D": "1Y",
+        "1Y": "1Y",
+        "MAX": "ALL",
+        "TOTAL": "ALL",
+        "ALL": "ALL",
+    }
+    return aliases.get(clean, "1M")
+
+
 async def search_symbols(query: str, limit: int = 8) -> list[SymbolSearchResult]:
     clean_query = query.strip()
     if len(clean_query) < 2:
@@ -158,6 +186,33 @@ async def _get_yahoo_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
     if not points:
         raise ValueError(f"No historical prices available for {symbol}")
     return points[-days:]
+
+
+async def _get_yahoo_history_range(symbol: str, range_key: str) -> list[HistoryPoint]:
+    yahoo_range, interval = {
+        "1D": ("1d", "5m"),
+        "1W": ("5d", "15m"),
+        "1M": ("1mo", "1d"),
+        "1Y": ("1y", "1d"),
+        "ALL": ("max", "1mo"),
+    }[range_key]
+    payload = await _get_yahoo_chart(symbol, yahoo_range, interval)
+    result = _first_chart_result(payload)
+    timestamps = result.get("timestamp", [])
+    quote = result.get("indicators", {}).get("quote", [{}])[0]
+    closes = quote.get("close", [])
+
+    points = []
+    for timestamp, close in zip(timestamps, closes, strict=False):
+        if close is None:
+            continue
+        moment = datetime.fromtimestamp(timestamp, tz=UTC)
+        label = moment.isoformat() if range_key in {"1D", "1W"} else moment.date().isoformat()
+        points.append(HistoryPoint(date=label, close=round(float(close), 2)))
+
+    if not points:
+        raise ValueError(f"No historical prices available for {symbol}")
+    return points
 
 
 async def _get_yahoo_chart(

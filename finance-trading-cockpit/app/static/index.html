@@ -27,12 +27,13 @@
 
       <section class="toolbar">
         <input id="watchlist-filter" placeholder="Filtra watchlist..." />
-        <select id="history-range" aria-label="Intervallo grafico">
-          <option value="30">30 giorni</option>
-          <option value="90">90 giorni</option>
-          <option value="180">180 giorni</option>
-          <option value="365">1 anno</option>
-        </select>
+        <div id="range-tabs" class="range-tabs" aria-label="Intervallo grafico">
+          <button type="button" data-range="1D">Oggi</button>
+          <button type="button" data-range="1W">1S</button>
+          <button class="active" type="button" data-range="1M">1M</button>
+          <button type="button" data-range="1Y">1A</button>
+          <button type="button" data-range="ALL">Totale</button>
+        </div>
         <input id="news-query" placeholder="Cerca notizie giornaliere..." />
         <button id="search-news" type="button">Cerca</button>
         <button id="refresh" type="button">Aggiorna</button>

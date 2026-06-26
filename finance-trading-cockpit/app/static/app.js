@@ -5,7 +5,7 @@ const refreshButton = document.querySelector("#refresh");
 const searchButton = document.querySelector("#search-news");
 const queryInput = document.querySelector("#news-query");
 const filterInput = document.querySelector("#watchlist-filter");
-const rangeSelect = document.querySelector("#history-range");
+const rangeTabs = document.querySelector("#range-tabs");
 const summaryEl = document.querySelector("#summary");
 const symbolInput = document.querySelector("#symbol");
 const nameInput = document.querySelector("#name");
@@ -16,6 +16,7 @@ const suggestionsEl = document.querySelector("#symbol-suggestions");
 let overviewState = [];
 let symbolResults = [];
 let suggestTimer;
+let activeRange = "1M";
 
 async function request(path, options) {
   const response = await fetch(path, {
@@ -74,23 +75,29 @@ function signalCard(signal) {
 }
 
 function insightCard(item) {
-  const { ticker, signal, history } = item;
+  const { ticker, signal, history, chart_source: chartSource, chart_range: chartRange } = item;
   const changeClass = signal.quote.change_percent >= 0 ? "Bullish" : "Bearish";
   const subtitle = [ticker.name, ticker.sector].filter(Boolean).map(escapeHtml).join(" - ");
   const historyJson = escapeHtml(JSON.stringify(history));
-  const sourceLabel = signal.quote.source === "yahoo" ? "Yahoo Finance" : signal.quote.source;
+  const sourceLabel = sourceName(chartSource || signal.quote.source);
+  const sourceMeta = `${sourceLabel} - ${rangeLabel(chartRange || activeRange)}`;
+  const relatedNews = signal.news?.length ? signal.news.slice(0, 3).map(newsItemCompact).join("") : `<p class="muted small">Nessuna notizia collegata.</p>`;
   const chartMarkup = history.length
-    ? `<canvas class="chart" width="640" height="220" data-history="${historyJson}" aria-label="Andamento ${escapeHtml(ticker.symbol)}"></canvas>`
+    ? `<canvas class="chart" width="640" height="260" data-history="${historyJson}" data-range="${escapeHtml(chartRange || activeRange)}" aria-label="Andamento ${escapeHtml(ticker.symbol)}"></canvas>`
     : `<div class="chart chart-empty">Storico reale non disponibile</div>`;
   return `
     <article class="signal insight-card">
       <header>
         <div>
           <div class="symbol">${escapeHtml(ticker.symbol)}</div>
-          <div class="muted">${subtitle || "Titolo monitorato"} - ${escapeHtml(sourceLabel)}</div>
+          <div class="muted">${subtitle || "Titolo monitorato"}</div>
         </div>
         <span class="stance ${escapeHtml(signal.stance)}">${escapeHtml(signal.stance)}</span>
       </header>
+      <div class="chart-meta">
+        <span>${escapeHtml(sourceMeta)}</span>
+        <span>${history.length ? `${escapeHtml(history.at(0).date)} -> ${escapeHtml(history.at(-1).date)}` : ""}</span>
+      </div>
       ${chartMarkup}
       <div class="metric-row">
         <div class="metric"><span class="muted">Prezzo</span><strong>${formatPrice(signal.quote.price)}</strong></div>
@@ -98,25 +105,58 @@ function insightCard(item) {
         <div class="metric"><span class="muted">Score</span><strong>${signal.score}</strong></div>
       </div>
       <div class="reason-line">${signal.reasons.map(escapeHtml).join(" - ")}</div>
+      <div class="ticker-news">
+        <h3>Notizie ${escapeHtml(ticker.symbol)}</h3>
+        ${relatedNews}
+      </div>
       <button class="remove" data-symbol="${escapeHtml(ticker.symbol)}" type="button">Rimuovi</button>
     </article>
   `;
 }
 
+function sourceName(source) {
+  if (source === "yahoo") return "Fonte grafico: Yahoo Finance";
+  if (source === "demo") return "Fonte grafico: demo";
+  if (source === "unavailable") return "Fonte grafico: non disponibile";
+  return `Fonte grafico: ${source || "sconosciuta"}`;
+}
+
+function rangeLabel(range) {
+  return {
+    "1D": "oggi",
+    "1W": "ultima settimana",
+    "1M": "ultimo mese",
+    "1Y": "ultimo anno",
+    ALL: "totale",
+  }[range] || range;
+}
+
 function newsItem(item) {
   const href = item.link && item.link !== "#" ? item.link : "#";
+  const openLink = href === "#" ? "" : `<a class="open-news" href="${escapeHtml(href)}" target="_blank" rel="noreferrer">Apri</a>`;
   return `
     <article class="news-item">
       <a href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${escapeHtml(item.title)}</a>
       <p>${escapeHtml(item.summary)}</p>
-      <div class="muted">${escapeHtml(item.source)}${item.published ? ` - ${escapeHtml(item.published)}` : ""}</div>
+      <div class="news-meta"><span>${escapeHtml(item.source)}${item.published ? ` - ${escapeHtml(item.published)}` : ""}</span>${openLink}</div>
+    </article>
+  `;
+}
+
+function newsItemCompact(item) {
+  const href = item.link && item.link !== "#" ? item.link : "#";
+  const disabled = href === "#" ? " news-link-disabled" : "";
+  const openLink = href === "#" ? "" : `<a class="open-news" href="${escapeHtml(href)}" target="_blank" rel="noreferrer">Apri</a>`;
+  return `
+    <article class="ticker-news-item">
+      <a class="${disabled}" href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${escapeHtml(item.title)}</a>
+      <div class="news-meta"><span>${escapeHtml(item.source)}${item.published ? ` - ${escapeHtml(item.published)}` : ""}</span>${openLink}</div>
     </article>
   `;
 }
 
 async function loadSignals() {
-  const days = rangeSelect.value;
-  overviewState = await request(`api/overview?days=${encodeURIComponent(days)}`);
+  overviewState = await request(`api/overview?range=${encodeURIComponent(activeRange)}`);
   renderOverview();
 }
 
@@ -195,7 +235,13 @@ searchButton.addEventListener("click", async () => {
 });
 
 filterInput.addEventListener("input", renderOverview);
-rangeSelect.addEventListener("change", loadSignals);
+rangeTabs.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-range]");
+  if (!button) return;
+  activeRange = button.dataset.range;
+  rangeTabs.querySelectorAll("[data-range]").forEach((item) => item.classList.toggle("active", item === button));
+  await loadSignals();
+});
 symbolInput.addEventListener("input", () => {
   clearTimeout(suggestTimer);
   suggestTimer = setTimeout(loadSymbolSuggestions, 220);
@@ -263,6 +309,7 @@ function hideSuggestions() {
 
 function drawCharts() {
   document.querySelectorAll(".chart").forEach((canvas) => {
+    if (!canvas.dataset.history) return;
     const points = JSON.parse(canvas.dataset.history || "[]");
     const ctx = canvas.getContext("2d");
     const ratio = window.devicePixelRatio || 1;
@@ -277,50 +324,77 @@ function drawCharts() {
     const min = Math.min(...values);
     const max = Math.max(...values);
     const span = max - min || 1;
-    const pad = 18 * ratio;
-    const plotWidth = width - pad * 2;
-    const plotHeight = height - pad * 2;
+    const padLeft = 54 * ratio;
+    const padRight = 14 * ratio;
+    const padTop = 16 * ratio;
+    const padBottom = 28 * ratio;
+    const pad = padLeft;
+    const plotWidth = width - padLeft - padRight;
+    const plotHeight = height - padTop - padBottom;
     const rising = values.at(-1) >= values[0];
     const lineColor = rising ? "#57d69a" : "#ff7878";
 
     ctx.strokeStyle = "rgba(154, 168, 181, 0.22)";
     ctx.lineWidth = 1 * ratio;
+    ctx.fillStyle = "rgba(237, 242, 247, 0.72)";
+    ctx.font = `${11 * ratio}px Inter, system-ui, sans-serif`;
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
     for (let i = 0; i < 4; i += 1) {
-      const y = pad + (plotHeight / 3) * i;
+      const y = padTop + (plotHeight / 3) * i;
+      const value = max - (span / 3) * i;
       ctx.beginPath();
-      ctx.moveTo(pad, y);
-      ctx.lineTo(width - pad, y);
+      ctx.moveTo(padLeft, y);
+      ctx.lineTo(width - padRight, y);
       ctx.stroke();
+      ctx.fillText(formatPrice(value), padLeft - 8 * ratio, y);
     }
 
-    const gradient = ctx.createLinearGradient(0, pad, 0, height - pad);
+    const gradient = ctx.createLinearGradient(0, padTop, 0, height - padBottom);
     gradient.addColorStop(0, rising ? "rgba(87, 214, 154, 0.28)" : "rgba(255, 120, 120, 0.24)");
     gradient.addColorStop(1, "rgba(16, 20, 24, 0)");
 
     ctx.beginPath();
     points.forEach((point, index) => {
-      const x = pad + (plotWidth * index) / (points.length - 1);
-      const y = pad + plotHeight - ((point.close - min) / span) * plotHeight;
+      const x = padLeft + (plotWidth * index) / (points.length - 1);
+      const y = padTop + plotHeight - ((point.close - min) / span) * plotHeight;
       if (index === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
-    ctx.lineTo(width - pad, height - pad);
-    ctx.lineTo(pad, height - pad);
+    ctx.lineTo(width - padRight, height - padBottom);
+    ctx.lineTo(padLeft, height - padBottom);
     ctx.closePath();
     ctx.fillStyle = gradient;
     ctx.fill();
 
     ctx.beginPath();
     points.forEach((point, index) => {
-      const x = pad + (plotWidth * index) / (points.length - 1);
-      const y = pad + plotHeight - ((point.close - min) / span) * plotHeight;
+      const x = padLeft + (plotWidth * index) / (points.length - 1);
+      const y = padTop + plotHeight - ((point.close - min) / span) * plotHeight;
       if (index === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
     ctx.strokeStyle = lineColor;
     ctx.lineWidth = 2.5 * ratio;
     ctx.stroke();
+
+    ctx.fillStyle = "rgba(154, 168, 181, 0.88)";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText(shortDate(points[0].date), padLeft, height - 8 * ratio);
+    ctx.textAlign = "right";
+    ctx.fillText(shortDate(points.at(-1).date), width - padRight, height - 8 * ratio);
   });
+}
+
+function shortDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit",
+    month: "2-digit",
+    ...(activeRange === "1D" ? { hour: "2-digit", minute: "2-digit" } : {}),
+  }).format(date);
 }
 
 window.addEventListener("resize", drawCharts);
