@@ -19,6 +19,8 @@ class Quote(BaseModel):
     change_percent: float
     volume: int
     source: str
+    as_of: str | None = None
+    source_url: str | None = None
 
 
 class SymbolSearchResult(BaseModel):
@@ -40,6 +42,10 @@ class TickerInsight(BaseModel):
     history: list[HistoryPoint]
     chart_source: str = "unknown"
     chart_range: str = "1M"
+    chart_as_of: str | None = None
+    chart_source_url: str | None = None
+    range_change: float | None = None
+    range_change_percent: float | None = None
 
 
 class NewsItem(BaseModel):

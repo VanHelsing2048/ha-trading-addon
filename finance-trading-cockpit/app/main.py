@@ -97,9 +97,15 @@ async def api_overview(
             related_news = [item for item in all_news if symbol in item.symbols] or all_news
             signal = build_signal(symbol, quote, related_news)
             history = await get_history(symbol, days) if days is not None else await get_history_range(symbol, chart_range)
+            range_change, range_change_percent = _range_performance(history)
+            range_reason = _range_reason(chart_range, range_change, range_change_percent)
+            if range_reason:
+                signal.reasons.insert(0, range_reason)
         except Exception as exc:
             signal = _unavailable_signal(symbol, str(exc))
             history = []
+            range_change = None
+            range_change_percent = None
         overview.append(
             {
                 "ticker": ticker,
@@ -107,6 +113,10 @@ async def api_overview(
                 "history": history,
                 "chart_source": signal.quote.source,
                 "chart_range": chart_range,
+                "chart_as_of": signal.quote.as_of,
+                "chart_source_url": signal.quote.source_url,
+                "range_change": range_change,
+                "range_change_percent": range_change_percent,
             }
         )
     return overview
@@ -144,3 +154,29 @@ def _unavailable_signal(symbol: str, reason: str) -> Signal:
         quote=Quote(symbol=symbol.upper(), price=0, change_percent=0, volume=0, source="unavailable"),
         news=[],
     )
+
+
+def _range_performance(history: list[HistoryPoint]) -> tuple[float | None, float | None]:
+    if len(history) < 2:
+        return None, None
+    first = history[0].close
+    last = history[-1].close
+    if first == 0:
+        return None, None
+    change = round(last - first, 2)
+    change_percent = round((change / first) * 100, 2)
+    return change, change_percent
+
+
+def _range_reason(range_key: str, change: float | None, change_percent: float | None) -> str | None:
+    if change is None or change_percent is None:
+        return None
+    labels = {
+        "1D": "oggi",
+        "1W": "nell'ultima settimana",
+        "1M": "nell'ultimo mese",
+        "1Y": "nell'ultimo anno",
+        "ALL": "sul periodo totale disponibile",
+    }
+    direction = "positivo" if change_percent >= 0 else "negativo"
+    return f"Trend {direction} {labels.get(range_key, range_key)}: {change:+.2f} ({change_percent:+.2f}%)"

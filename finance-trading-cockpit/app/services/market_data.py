@@ -11,6 +11,7 @@ from app.models import HistoryPoint, Quote, SymbolSearchResult
 
 YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 YAHOO_SEARCH_URL = "https://query2.finance.yahoo.com/v1/finance/search"
+YAHOO_QUOTE_PAGE_URL = "https://finance.yahoo.com/quote/{symbol}"
 HTTP_TIMEOUT = 8.0
 
 
@@ -36,7 +37,7 @@ async def get_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
 async def get_history_range(symbol: str, range_key: str = "1M") -> list[HistoryPoint]:
     clean_range = normalize_range(range_key)
     if os.environ.get("DATA_MODE", "live") == "demo":
-        demo_days = {"1D": 1, "1W": 7, "1M": 30, "1Y": 365, "ALL": 365}.get(clean_range, 30)
+        demo_days = {"1D": 2, "1W": 7, "1M": 30, "1Y": 365, "ALL": 365}.get(clean_range, 30)
         return await _demo_history(symbol, demo_days)
 
     return await _get_yahoo_history_range(symbol, clean_range)
@@ -104,6 +105,8 @@ def _demo_quote(symbol: str) -> Quote:
         change_percent=round(change, 2),
         volume=volume,
         source="demo",
+        as_of=datetime.now(UTC).isoformat(),
+        source_url=None,
     )
 
 
@@ -111,7 +114,7 @@ async def _demo_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
     clean_symbol = symbol.upper()
     rng = _stable_rng(f"{clean_symbol}:{days}")
     quote = await get_quote(clean_symbol)
-    days = max(7, min(days, 365))
+    days = max(2, min(days, 365))
     today = date.today()
     price = quote.price / rng.uniform(0.88, 1.16)
     points: list[HistoryPoint] = []
@@ -159,6 +162,8 @@ async def _get_yahoo_quote(symbol: str) -> Quote:
         change_percent=round(change_percent, 2),
         volume=int(volume or 0),
         source="yahoo",
+        as_of=datetime.now(UTC).isoformat(),
+        source_url=YAHOO_QUOTE_PAGE_URL.format(symbol=symbol.upper()),
     )
 
 

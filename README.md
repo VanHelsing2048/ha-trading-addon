@@ -12,11 +12,12 @@ Dashboard/add-on sperimentale per seguire titoli finanziari, leggere notizie gio
 - Watchlist persistente in SQLite nel volume privato `/data` dell'add-on
 - Endpoint per aggiungere/rimuovere ticker
 - Range grafico stile trading app: oggi, 1 settimana, 1 mese, 1 anno, totale
-- Scala prezzi e fonte dati visibili su ogni grafico
+- Scala prezzi, fonte dati, link sorgente e ora aggiornamento visibili su ogni grafico
 - Filtro rapido della watchlist
 - Autocomplete ticker con ricerca simboli reali
 - Quote e storico prezzi live tramite provider Yahoo Finance non ufficiale
 - Notizie generali e notizie collegate ai singoli titoli, con fonte e link apribile
+- Performance calcolata sul range selezionato, separata dalla variazione giornaliera
 - Score iniziale basato su prezzo, variazione giornaliera e notizie
 - Icona add-on in `finance-trading-cockpit/icon.png`
 - Dashboard Lovelace di esempio in `home-assistant/dashboard-example.yaml`

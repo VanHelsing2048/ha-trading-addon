@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.1
+
+- Show when financial data was fetched and link to the Yahoo Finance source page for each ticker.
+- Add range-specific performance metrics so the description changes when switching chart range.
+- Force fresh overview requests when changing range to avoid stale chart data in the browser or Ingress panel.
+- Add explicit range trend text to every ticker card.
+
 ## 0.4.0
 
 - Replace the generic chart selector with trading-style range buttons: today, 1 week, 1 month, 1 year and total.

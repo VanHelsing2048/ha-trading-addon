@@ -40,6 +40,24 @@ function formatPrice(value) {
   }).format(value);
 }
 
+function formatPercent(value) {
+  if (value === null || value === undefined) return "n/d";
+  return `${value >= 0 ? "+" : ""}${formatPrice(value)}%`;
+}
+
+function formatDateTime(value) {
+  if (!value) return "n/d";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -77,10 +95,15 @@ function signalCard(signal) {
 function insightCard(item) {
   const { ticker, signal, history, chart_source: chartSource, chart_range: chartRange } = item;
   const changeClass = signal.quote.change_percent >= 0 ? "Bullish" : "Bearish";
+  const rangeClass = (item.range_change_percent || 0) >= 0 ? "Bullish" : "Bearish";
   const subtitle = [ticker.name, ticker.sector].filter(Boolean).map(escapeHtml).join(" - ");
   const historyJson = escapeHtml(JSON.stringify(history));
+  const sourceUrl = item.chart_source_url || signal.quote.source_url || "";
   const sourceLabel = sourceName(chartSource || signal.quote.source);
-  const sourceMeta = `${sourceLabel} - ${rangeLabel(chartRange || activeRange)}`;
+  const sourceLink = sourceUrl
+    ? `<a class="source-link" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(sourceLabel)}</a>`
+    : escapeHtml(sourceLabel);
+  const sourceMeta = `${rangeLabel(chartRange || activeRange)} - aggiornato ${formatDateTime(item.chart_as_of || signal.quote.as_of)}`;
   const relatedNews = signal.news?.length ? signal.news.slice(0, 3).map(newsItemCompact).join("") : `<p class="muted small">Nessuna notizia collegata.</p>`;
   const chartMarkup = history.length
     ? `<canvas class="chart" width="640" height="260" data-history="${historyJson}" data-range="${escapeHtml(chartRange || activeRange)}" aria-label="Andamento ${escapeHtml(ticker.symbol)}"></canvas>`
@@ -95,6 +118,7 @@ function insightCard(item) {
         <span class="stance ${escapeHtml(signal.stance)}">${escapeHtml(signal.stance)}</span>
       </header>
       <div class="chart-meta">
+        <span>${sourceLink}</span>
         <span>${escapeHtml(sourceMeta)}</span>
         <span>${history.length ? `${escapeHtml(history.at(0).date)} -> ${escapeHtml(history.at(-1).date)}` : ""}</span>
       </div>
@@ -102,6 +126,7 @@ function insightCard(item) {
       <div class="metric-row">
         <div class="metric"><span class="muted">Prezzo</span><strong>${formatPrice(signal.quote.price)}</strong></div>
         <div class="metric"><span class="muted">Oggi</span><strong class="${changeClass}">${signal.quote.change_percent}%</strong></div>
+        <div class="metric"><span class="muted">${escapeHtml(rangeLabel(chartRange || activeRange))}</span><strong class="${rangeClass}">${formatPercent(item.range_change_percent)}</strong></div>
         <div class="metric"><span class="muted">Score</span><strong>${signal.score}</strong></div>
       </div>
       <div class="reason-line">${signal.reasons.map(escapeHtml).join(" - ")}</div>
@@ -156,7 +181,7 @@ function newsItemCompact(item) {
 }
 
 async function loadSignals() {
-  overviewState = await request(`api/overview?range=${encodeURIComponent(activeRange)}`);
+  overviewState = await request(`api/overview?range=${encodeURIComponent(activeRange)}&_=${Date.now()}`);
   renderOverview();
 }
 
