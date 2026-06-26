@@ -20,6 +20,7 @@ Dashboard/add-on sperimentale per seguire titoli finanziari, leggere notizie gio
 - Quote e storico prezzi live tramite provider Yahoo Finance non ufficiale
 - Notizie generali e notizie collegate ai singoli titoli, con fonte e link apribile
 - Performance calcolata sul range selezionato, separata dalla variazione giornaliera
+- Le percentuali mostrate nelle card sono relative solo al range selezionato
 - Layout responsive ottimizzato per mobile senza scroll orizzontale
 - Score iniziale basato su prezzo, variazione giornaliera e notizie
 - Icona add-on in `finance-trading-cockpit/icon.png`

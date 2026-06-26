@@ -80,7 +80,6 @@ function escapeHtml(value) {
 }
 
 function signalCard(signal) {
-  const changeClass = signal.quote.change_percent >= 0 ? "Bullish" : "Bearish";
   const safeSymbol = escapeHtml(signal.symbol);
   const safeSource = escapeHtml(signal.quote.source);
   return `
@@ -94,7 +93,6 @@ function signalCard(signal) {
       </header>
       <div class="metric-row">
         <div class="metric"><span class="muted">Prezzo</span><strong>${signal.quote.price}</strong></div>
-        <div class="metric"><span class="muted">Oggi</span><strong class="${changeClass}">${signal.quote.change_percent}%</strong></div>
         <div class="metric"><span class="muted">Score</span><strong>${signal.score}</strong></div>
       </div>
       <div class="metric"><span class="muted">Volume</span><strong>${formatVolume(signal.quote.volume)}</strong></div>
@@ -106,7 +104,6 @@ function signalCard(signal) {
 
 function insightCard(item) {
   const { ticker, signal, history, chart_source: chartSource, chart_range: chartRange } = item;
-  const changeClass = signal.quote.change_percent >= 0 ? "Bullish" : "Bearish";
   const rangeClass = (item.range_change_percent || 0) >= 0 ? "Bullish" : "Bearish";
   const subtitle = [ticker.name, ticker.sector].filter(Boolean).map(escapeHtml).join(" - ");
   const historyJson = escapeHtml(JSON.stringify(history));
@@ -144,7 +141,6 @@ function insightCard(item) {
           <small>${formatMoney(signal.quote.price_usd, "USD")}</small>
           <em>Orig. ${escapeHtml(signal.quote.currency)} ${formatPrice(signal.quote.price)}</em>
         </div>
-        <div class="metric"><span class="muted">Oggi</span><strong class="${changeClass}">${signal.quote.change_percent}%</strong></div>
         <div class="metric"><span class="muted">${escapeHtml(rangeLabel(chartRange || activeRange))}</span><strong class="${rangeClass}">${formatPercent(item.range_change_percent)}</strong></div>
         <div class="metric"><span class="muted">Score</span><strong>${signal.score}</strong></div>
       </div>

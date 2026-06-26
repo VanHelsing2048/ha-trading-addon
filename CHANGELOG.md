@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.2
+
+- Show only the selected chart range percentage in ticker cards.
+- Remove the separate daily percentage metric to avoid mixing `1D`, `1M`, `1Y` and total views.
+
 ## 0.5.1
 
 - Add add-on-local changelog so Home Assistant users can inspect release notes from the add-on package.
