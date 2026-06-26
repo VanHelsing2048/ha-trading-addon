@@ -13,6 +13,8 @@ Dashboard/add-on sperimentale per seguire titoli finanziari, leggere notizie gio
 - Endpoint per aggiungere/rimuovere ticker
 - Range grafico stile trading app: oggi, 1 settimana, 1 mese, 1 anno, totale
 - Scala prezzi, fonte dati, link sorgente e ora aggiornamento visibili su ogni grafico
+- Prezzi gestiti con doppio valore EUR/USD e cambio EUR/USD visibile
+- Grafico selezionabile in EUR o USD
 - Filtro rapido della watchlist
 - Autocomplete ticker con ricerca simboli reali
 - Quote e storico prezzi live tramite provider Yahoo Finance non ufficiale

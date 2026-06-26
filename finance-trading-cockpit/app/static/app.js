@@ -6,6 +6,7 @@ const searchButton = document.querySelector("#search-news");
 const queryInput = document.querySelector("#news-query");
 const filterInput = document.querySelector("#watchlist-filter");
 const rangeTabs = document.querySelector("#range-tabs");
+const currencyTabs = document.querySelector("#currency-tabs");
 const summaryEl = document.querySelector("#summary");
 const symbolInput = document.querySelector("#symbol");
 const nameInput = document.querySelector("#name");
@@ -17,6 +18,7 @@ let overviewState = [];
 let symbolResults = [];
 let suggestTimer;
 let activeRange = "1M";
+let activeCurrency = "EUR";
 
 async function request(path, options) {
   const response = await fetch(path, {
@@ -35,6 +37,16 @@ function formatVolume(value) {
 
 function formatPrice(value) {
   return Intl.NumberFormat("it-IT", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatMoney(value, currency) {
+  if (value === null || value === undefined) return "n/d";
+  return Intl.NumberFormat("it-IT", {
+    style: "currency",
+    currency,
     maximumFractionDigits: 2,
     minimumFractionDigits: 2,
   }).format(value);
@@ -104,6 +116,7 @@ function insightCard(item) {
     ? `<a class="source-link" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(sourceLabel)}</a>`
     : escapeHtml(sourceLabel);
   const sourceMeta = `${rangeLabel(chartRange || activeRange)} - aggiornato ${formatDateTime(item.chart_as_of || signal.quote.as_of)}`;
+  const fxMeta = signal.quote.eur_usd_rate ? `Cambio EUR/USD ${signal.quote.eur_usd_rate}` : "Cambio EUR/USD n/d";
   const relatedNews = signal.news?.length ? signal.news.slice(0, 3).map(newsItemCompact).join("") : `<p class="muted small">Nessuna notizia collegata.</p>`;
   const chartMarkup = history.length
     ? `<canvas class="chart" width="640" height="260" data-history="${historyJson}" data-range="${escapeHtml(chartRange || activeRange)}" aria-label="Andamento ${escapeHtml(ticker.symbol)}"></canvas>`
@@ -120,11 +133,17 @@ function insightCard(item) {
       <div class="chart-meta">
         <span>${sourceLink}</span>
         <span>${escapeHtml(sourceMeta)}</span>
+        <span>${escapeHtml(fxMeta)}</span>
         <span>${history.length ? `${escapeHtml(history.at(0).date)} -> ${escapeHtml(history.at(-1).date)}` : ""}</span>
       </div>
       ${chartMarkup}
       <div class="metric-row">
-        <div class="metric"><span class="muted">Prezzo</span><strong>${formatPrice(signal.quote.price)}</strong></div>
+        <div class="metric price-dual">
+          <span class="muted">Prezzo</span>
+          <strong>${formatMoney(signal.quote.price_eur, "EUR")}</strong>
+          <small>${formatMoney(signal.quote.price_usd, "USD")}</small>
+          <em>Orig. ${escapeHtml(signal.quote.currency)} ${formatPrice(signal.quote.price)}</em>
+        </div>
         <div class="metric"><span class="muted">Oggi</span><strong class="${changeClass}">${signal.quote.change_percent}%</strong></div>
         <div class="metric"><span class="muted">${escapeHtml(rangeLabel(chartRange || activeRange))}</span><strong class="${rangeClass}">${formatPercent(item.range_change_percent)}</strong></div>
         <div class="metric"><span class="muted">Score</span><strong>${signal.score}</strong></div>
@@ -267,6 +286,13 @@ rangeTabs.addEventListener("click", async (event) => {
   rangeTabs.querySelectorAll("[data-range]").forEach((item) => item.classList.toggle("active", item === button));
   await loadSignals();
 });
+currencyTabs.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-currency]");
+  if (!button) return;
+  activeCurrency = button.dataset.currency;
+  currencyTabs.querySelectorAll("[data-currency]").forEach((item) => item.classList.toggle("active", item === button));
+  drawCharts();
+});
 symbolInput.addEventListener("input", () => {
   clearTimeout(suggestTimer);
   suggestTimer = setTimeout(loadSymbolSuggestions, 220);
@@ -345,11 +371,12 @@ function drawCharts() {
     ctx.clearRect(0, 0, width, height);
     if (points.length < 2) return;
 
-    const values = points.map((point) => point.close);
+    const valueKey = activeCurrency === "USD" ? "close_usd" : "close_eur";
+    const values = points.map((point) => point[valueKey] ?? point.close);
     const min = Math.min(...values);
     const max = Math.max(...values);
     const span = max - min || 1;
-    const padLeft = 54 * ratio;
+    const padLeft = 74 * ratio;
     const padRight = 14 * ratio;
     const padTop = 16 * ratio;
     const padBottom = 28 * ratio;
@@ -372,7 +399,7 @@ function drawCharts() {
       ctx.moveTo(padLeft, y);
       ctx.lineTo(width - padRight, y);
       ctx.stroke();
-      ctx.fillText(formatPrice(value), padLeft - 8 * ratio, y);
+      ctx.fillText(formatMoney(value, activeCurrency), padLeft - 8 * ratio, y);
     }
 
     const gradient = ctx.createLinearGradient(0, padTop, 0, height - padBottom);
@@ -382,7 +409,8 @@ function drawCharts() {
     ctx.beginPath();
     points.forEach((point, index) => {
       const x = padLeft + (plotWidth * index) / (points.length - 1);
-      const y = padTop + plotHeight - ((point.close - min) / span) * plotHeight;
+      const closeValue = point[valueKey] ?? point.close;
+      const y = padTop + plotHeight - ((closeValue - min) / span) * plotHeight;
       if (index === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
@@ -395,7 +423,8 @@ function drawCharts() {
     ctx.beginPath();
     points.forEach((point, index) => {
       const x = padLeft + (plotWidth * index) / (points.length - 1);
-      const y = padTop + plotHeight - ((point.close - min) / span) * plotHeight;
+      const closeValue = point[valueKey] ?? point.close;
+      const y = padTop + plotHeight - ((closeValue - min) / span) * plotHeight;
       if (index === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });

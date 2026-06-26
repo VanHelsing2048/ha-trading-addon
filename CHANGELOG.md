@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+- Add EUR/USD price handling for quotes and chart history.
+- Show both EUR and USD values in the price card.
+- Add a EUR/USD chart currency switch.
+- Fetch Yahoo Finance EUR/USD exchange rate and show it in chart metadata.
+
 ## 0.4.3
 
 - Improve mobile responsiveness and remove horizontal overflow on narrow screens.

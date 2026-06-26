@@ -16,6 +16,10 @@ class Ticker(TickerCreate):
 class Quote(BaseModel):
     symbol: str
     price: float
+    currency: str = "USD"
+    price_eur: float | None = None
+    price_usd: float | None = None
+    eur_usd_rate: float | None = None
     change_percent: float
     volume: int
     source: str
@@ -34,6 +38,8 @@ class SymbolSearchResult(BaseModel):
 class HistoryPoint(BaseModel):
     date: str
     close: float
+    close_eur: float | None = None
+    close_usd: float | None = None
 
 
 class TickerInsight(BaseModel):

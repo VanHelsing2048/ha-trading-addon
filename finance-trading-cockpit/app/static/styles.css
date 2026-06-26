@@ -166,7 +166,8 @@ button {
   flex: 1;
 }
 
-.range-tabs {
+.range-tabs,
+.currency-tabs {
   display: flex;
   flex: 0 0 auto;
   gap: 4px;
@@ -177,7 +178,8 @@ button {
   background: var(--input);
 }
 
-.range-tabs button {
+.range-tabs button,
+.currency-tabs button {
   height: 32px;
   min-width: 44px;
   padding: 0 10px;
@@ -186,7 +188,8 @@ button {
   color: var(--muted);
 }
 
-.range-tabs button.active {
+.range-tabs button.active,
+.currency-tabs button.active {
   background: #25313a;
   color: var(--text);
 }
@@ -326,6 +329,20 @@ button {
   overflow-wrap: anywhere;
 }
 
+.price-dual strong {
+  font-size: 17px;
+}
+
+.price-dual small,
+.price-dual em {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  overflow-wrap: anywhere;
+}
+
 .reasons {
   margin: 0;
   padding-left: 18px;
@@ -451,15 +468,24 @@ button {
     width: 100%;
   }
 
-  .range-tabs {
+  .range-tabs,
+  .currency-tabs {
     width: 100%;
     height: auto;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
     overflow: hidden;
   }
 
-  .range-tabs button {
+  .range-tabs {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .currency-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .range-tabs button,
+  .currency-tabs button {
     width: 100%;
     min-width: 0;
     padding: 0 4px;

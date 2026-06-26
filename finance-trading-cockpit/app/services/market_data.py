@@ -13,6 +13,7 @@ YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 YAHOO_SEARCH_URL = "https://query2.finance.yahoo.com/v1/finance/search"
 YAHOO_QUOTE_PAGE_URL = "https://finance.yahoo.com/quote/{symbol}"
 HTTP_TIMEOUT = 8.0
+EUR_USD_SYMBOL = "EURUSD=X"
 
 
 def _stable_rng(symbol: str) -> random.Random:
@@ -22,7 +23,7 @@ def _stable_rng(symbol: str) -> random.Random:
 
 async def get_quote(symbol: str) -> Quote:
     if os.environ.get("DATA_MODE", "live") == "demo":
-        return _demo_quote(symbol)
+        return _with_currency_values(_demo_quote(symbol), 1.08)
 
     return await _get_yahoo_quote(symbol)
 
@@ -102,6 +103,7 @@ def _demo_quote(symbol: str) -> Quote:
     return Quote(
         symbol=symbol.upper(),
         price=round(base_price * (1 + change / 100), 2),
+        currency="USD",
         change_percent=round(change, 2),
         volume=volume,
         source="demo",
@@ -125,13 +127,10 @@ async def _demo_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
         price += drift + rng.uniform(-1.8, 1.8)
         price = max(0.1, price)
         points.append(
-            HistoryPoint(
-                date=(today - timedelta(days=days - index - 1)).isoformat(),
-                close=round(price, 2),
-            )
+            _history_point((today - timedelta(days=days - index - 1)).isoformat(), round(price, 2), "USD", 1.08)
         )
 
-    points[-1] = HistoryPoint(date=today.isoformat(), close=quote.price)
+    points[-1] = _history_point(today.isoformat(), quote.price, "USD", 1.08)
     return points
 
 
@@ -139,6 +138,7 @@ async def _get_yahoo_quote(symbol: str) -> Quote:
     payload = await _get_yahoo_chart(symbol, "5d", "1d")
     result = _first_chart_result(payload)
     meta = result.get("meta", {})
+    currency = str(meta.get("currency") or "USD").upper()
     price = meta.get("regularMarketPrice")
     previous_close = meta.get("previousClose") or meta.get("chartPreviousClose")
     volume = meta.get("regularMarketVolume") or 0
@@ -156,15 +156,17 @@ async def _get_yahoo_quote(symbol: str) -> Quote:
         base = closes[-2] if len(closes) > 1 else price
         change_percent = ((float(price) - float(base)) / float(base)) * 100 if base else 0
 
-    return Quote(
+    eur_usd_rate = await _get_eur_usd_rate()
+    return _with_currency_values(Quote(
         symbol=symbol.upper(),
         price=round(float(price), 2),
+        currency=currency,
         change_percent=round(change_percent, 2),
         volume=int(volume or 0),
         source="yahoo",
         as_of=datetime.now(UTC).isoformat(),
         source_url=YAHOO_QUOTE_PAGE_URL.format(symbol=symbol.upper()),
-    )
+    ), eur_usd_rate)
 
 
 async def _get_yahoo_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
@@ -178,6 +180,8 @@ async def _get_yahoo_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
         extra_params={"period1": period1, "period2": period2},
     )
     result = _first_chart_result(payload)
+    currency = str(result.get("meta", {}).get("currency") or "USD").upper()
+    eur_usd_rate = await _get_eur_usd_rate()
     timestamps = result.get("timestamp", [])
     closes = result.get("indicators", {}).get("quote", [{}])[0].get("close", [])
 
@@ -186,7 +190,7 @@ async def _get_yahoo_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
         if close is None:
             continue
         day = datetime.fromtimestamp(timestamp, tz=UTC).date().isoformat()
-        points.append(HistoryPoint(date=day, close=round(float(close), 2)))
+        points.append(_history_point(day, round(float(close), 2), currency, eur_usd_rate))
 
     if not points:
         raise ValueError(f"No historical prices available for {symbol}")
@@ -203,6 +207,8 @@ async def _get_yahoo_history_range(symbol: str, range_key: str) -> list[HistoryP
     }[range_key]
     payload = await _get_yahoo_chart(symbol, yahoo_range, interval)
     result = _first_chart_result(payload)
+    currency = str(result.get("meta", {}).get("currency") or "USD").upper()
+    eur_usd_rate = await _get_eur_usd_rate()
     timestamps = result.get("timestamp", [])
     quote = result.get("indicators", {}).get("quote", [{}])[0]
     closes = quote.get("close", [])
@@ -213,7 +219,7 @@ async def _get_yahoo_history_range(symbol: str, range_key: str) -> list[HistoryP
             continue
         moment = datetime.fromtimestamp(timestamp, tz=UTC)
         label = moment.isoformat() if range_key in {"1D", "1W"} else moment.date().isoformat()
-        points.append(HistoryPoint(date=label, close=round(float(close), 2)))
+        points.append(_history_point(label, round(float(close), 2), currency, eur_usd_rate))
 
     if not points:
         raise ValueError(f"No historical prices available for {symbol}")
@@ -256,3 +262,40 @@ def _first_chart_result(payload: dict) -> dict:
 def _valid_closes(result: dict) -> list[float]:
     closes = result.get("indicators", {}).get("quote", [{}])[0].get("close", [])
     return [float(close) for close in closes if close is not None]
+
+
+async def _get_eur_usd_rate() -> float:
+    try:
+        payload = await _get_yahoo_chart(EUR_USD_SYMBOL, "1d", "1d")
+        result = _first_chart_result(payload)
+        price = result.get("meta", {}).get("regularMarketPrice")
+        if price:
+            return float(price)
+        closes = _valid_closes(result)
+        if closes:
+            return closes[-1]
+    except Exception:
+        pass
+    return 1.08
+
+
+def _with_currency_values(quote: Quote, eur_usd_rate: float) -> Quote:
+    price_eur, price_usd = _convert_eur_usd(quote.price, quote.currency, eur_usd_rate)
+    quote.price_eur = price_eur
+    quote.price_usd = price_usd
+    quote.eur_usd_rate = round(eur_usd_rate, 6)
+    return quote
+
+
+def _history_point(label: str, close: float, currency: str, eur_usd_rate: float) -> HistoryPoint:
+    close_eur, close_usd = _convert_eur_usd(close, currency, eur_usd_rate)
+    return HistoryPoint(date=label, close=close, close_eur=close_eur, close_usd=close_usd)
+
+
+def _convert_eur_usd(value: float, currency: str, eur_usd_rate: float) -> tuple[float | None, float | None]:
+    clean_currency = currency.upper()
+    if clean_currency == "USD":
+        return round(value / eur_usd_rate, 2), round(value, 2)
+    if clean_currency == "EUR":
+        return round(value, 2), round(value * eur_usd_rate, 2)
+    return None, None

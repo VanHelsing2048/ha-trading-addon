@@ -98,7 +98,7 @@ async def api_overview(
             signal = build_signal(symbol, quote, related_news)
             history = await get_history(symbol, days) if days is not None else await get_history_range(symbol, chart_range)
             range_change, range_change_percent = _range_performance(history)
-            range_reason = _range_reason(chart_range, range_change, range_change_percent)
+            range_reason = _range_reason(chart_range, range_change, range_change_percent, quote.currency)
             if range_reason:
                 signal.reasons.insert(0, range_reason)
         except Exception as exc:
@@ -168,7 +168,12 @@ def _range_performance(history: list[HistoryPoint]) -> tuple[float | None, float
     return change, change_percent
 
 
-def _range_reason(range_key: str, change: float | None, change_percent: float | None) -> str | None:
+def _range_reason(
+    range_key: str,
+    change: float | None,
+    change_percent: float | None,
+    currency: str,
+) -> str | None:
     if change is None or change_percent is None:
         return None
     labels = {
@@ -179,4 +184,4 @@ def _range_reason(range_key: str, change: float | None, change_percent: float | 
         "ALL": "sul periodo totale disponibile",
     }
     direction = "positivo" if change_percent >= 0 else "negativo"
-    return f"Trend {direction} {labels.get(range_key, range_key)}: {change:+.2f} ({change_percent:+.2f}%)"
+    return f"Trend {direction} {labels.get(range_key, range_key)}: {currency} {change:+.2f} ({change_percent:+.2f}%)"
