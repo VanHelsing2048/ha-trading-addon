@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.2
+
+- Harden the add-on security profile for Raspberry Pi deployments.
+- Restrict supported architectures to Raspberry Pi-oriented `aarch64` and `armv7`.
+- Run the application as a non-root user inside the container.
+- Explicitly declare no host network, host namespaces, Docker API, Supervisor API, Home Assistant API, auth API, privileged capabilities or full access.
+- Enable tmpfs for temporary files.
+- Publish prebuilt per-architecture GHCR images and sign them with Cosign from GitHub Actions.
+
 ## 0.4.1
 
 - Show when financial data was fetched and link to the Yahoo Finance source page for each ticker.

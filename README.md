@@ -49,6 +49,12 @@ La build usa `BUILD_ARCH` direttamente nel `Dockerfile`, cosi' Raspberry Pi 4 su
 - Non vengono esposte porte host nel `config.yaml`.
 - Non vengono richiesti privilegi, host network, Docker API, Supervisor API o accesso completo.
 - Il database resta nel volume privato `/data` dell'add-on.
+- Il processo applicativo gira come utente non-root nel container.
+- Le architetture supportate sono limitate a Raspberry Pi: `aarch64` e `armv7`.
+- Le opzioni sensibili sono dichiarate esplicitamente come disabilitate nel `config.yaml`.
+- L'add-on usa immagini GHCR precompilate per architettura e firmate con Cosign tramite GitHub Actions.
+
+Nota sul punteggio sicurezza: dopo il push di un tag, attendi che il workflow `Publish add-on image` finisca prima di installare o aggiornare da Home Assistant. Il tag dell'immagine deve corrispondere alla `version` del `config.yaml`.
 
 Per pubblicare una nuova versione:
 

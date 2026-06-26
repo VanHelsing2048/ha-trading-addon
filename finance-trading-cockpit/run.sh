@@ -20,4 +20,7 @@ fi
 
 export DB_PATH="${DB_PATH:-/data/finance_trading_cockpit.sqlite3}"
 
-uvicorn app.main:app --host 0.0.0.0 --port 8099
+mkdir -p /data
+chown -R trading:trading /data
+
+exec su-exec trading uvicorn app.main:app --host 0.0.0.0 --port 8099
