@@ -64,8 +64,9 @@ Per pubblicare una nuova versione:
 1. modifica il codice;
 2. aggiorna `version` nel `config.yaml`;
 3. aggiungi una nota in `CHANGELOG.md`;
-4. aggiorna `README.md` se cambiano installazione, configurazione o funzionalita';
-5. crea commit, tag Git e push.
+4. aggiungi la stessa nota in `finance-trading-cockpit/CHANGELOG.md`;
+5. aggiorna `README.md` se cambiano installazione, configurazione o funzionalita';
+6. crea commit, tag Git e push.
 
 Convenzione versioni:
 
