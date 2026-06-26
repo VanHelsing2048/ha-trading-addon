@@ -101,11 +101,17 @@ async def api_overview(
             range_reason = _range_reason(chart_range, range_change, range_change_percent, quote.currency)
             if range_reason:
                 signal.reasons.insert(0, range_reason)
+            first_close = history[0].close if history else None
+            last_close = history[-1].close if history else None
+            calculation_note = _calculation_note(chart_range, first_close, last_close, quote.currency)
         except Exception as exc:
             signal = _unavailable_signal(symbol, str(exc))
             history = []
             range_change = None
             range_change_percent = None
+            first_close = None
+            last_close = None
+            calculation_note = None
         overview.append(
             {
                 "ticker": ticker,
@@ -117,6 +123,10 @@ async def api_overview(
                 "chart_source_url": signal.quote.source_url,
                 "range_change": range_change,
                 "range_change_percent": range_change_percent,
+                "history_points": len(history),
+                "first_close": first_close,
+                "last_close": last_close,
+                "calculation_note": calculation_note,
             }
         )
     return overview
@@ -185,3 +195,17 @@ def _range_reason(
     }
     direction = "positivo" if change_percent >= 0 else "negativo"
     return f"Trend {direction} {labels.get(range_key, range_key)}: {currency} {change:+.2f} ({change_percent:+.2f}%)"
+
+
+def _calculation_note(
+    range_key: str,
+    first_close: float | None,
+    last_close: float | None,
+    currency: str,
+) -> str | None:
+    if first_close is None or last_close is None:
+        return None
+    return (
+        f"{range_key}: ((ultimo {currency} {last_close:.2f} - "
+        f"primo {currency} {first_close:.2f}) / primo) * 100"
+    )

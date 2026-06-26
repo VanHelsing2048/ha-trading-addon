@@ -115,6 +115,13 @@ function insightCard(item) {
   const sourceMeta = `${rangeLabel(chartRange || activeRange)} - aggiornato ${formatDateTime(item.chart_as_of || signal.quote.as_of)}`;
   const fxMeta = signal.quote.eur_usd_rate ? `Cambio EUR/USD ${signal.quote.eur_usd_rate}` : "Cambio EUR/USD n/d";
   const relatedNews = signal.news?.length ? signal.news.slice(0, 3).map(newsItemCompact).join("") : `<p class="muted small">Nessuna notizia collegata.</p>`;
+  const auditRows = [
+    ["Range", chartRange || activeRange],
+    ["Punti", item.history_points ?? history.length],
+    ["Primo close", item.first_close === null || item.first_close === undefined ? "n/d" : `${signal.quote.currency} ${formatPrice(item.first_close)}`],
+    ["Ultimo close", item.last_close === null || item.last_close === undefined ? "n/d" : `${signal.quote.currency} ${formatPrice(item.last_close)}`],
+    ["Calcolo", item.calculation_note || "n/d"],
+  ];
   const chartMarkup = history.length
     ? `<canvas class="chart" width="640" height="260" data-history="${historyJson}" data-range="${escapeHtml(chartRange || activeRange)}" aria-label="Andamento ${escapeHtml(ticker.symbol)}"></canvas>`
     : `<div class="chart chart-empty">Storico reale non disponibile</div>`;
@@ -145,6 +152,12 @@ function insightCard(item) {
         <div class="metric"><span class="muted">Score</span><strong>${signal.score}</strong></div>
       </div>
       <div class="reason-line">${signal.reasons.map(escapeHtml).join(" - ")}</div>
+      <details class="data-audit">
+        <summary>Audit dati</summary>
+        <dl>
+          ${auditRows.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}
+        </dl>
+      </details>
       <div class="ticker-news">
         <h3>Notizie ${escapeHtml(ticker.symbol)}</h3>
         ${relatedNews}

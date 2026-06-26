@@ -52,6 +52,10 @@ class TickerInsight(BaseModel):
     chart_source_url: str | None = None
     range_change: float | None = None
     range_change_percent: float | None = None
+    history_points: int = 0
+    first_close: float | None = None
+    last_close: float | None = None
+    calculation_note: str | None = None
 
 
 class NewsItem(BaseModel):

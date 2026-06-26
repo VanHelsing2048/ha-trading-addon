@@ -21,6 +21,7 @@ Dashboard/add-on sperimentale per seguire titoli finanziari, leggere notizie gio
 - Notizie generali e notizie collegate ai singoli titoli, con fonte e link apribile
 - Performance calcolata sul range selezionato, separata dalla variazione giornaliera
 - Le percentuali mostrate nelle card sono relative solo al range selezionato
+- Audit dati per titolo con fonte, range, punti, primo/ultimo close e formula percentuale
 - Layout responsive ottimizzato per mobile senza scroll orizzontale
 - Score iniziale basato su prezzo, variazione giornaliera e notizie
 - Icona add-on in `finance-trading-cockpit/icon.png`

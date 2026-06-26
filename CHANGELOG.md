@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.3
+
+- Add per-ticker data audit details for source troubleshooting.
+- Show effective range, point count, first/last close and percentage calculation formula.
+
 ## 0.5.2
 
 - Show only the selected chart range percentage in ticker cards.

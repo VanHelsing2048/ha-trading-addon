@@ -356,6 +356,38 @@ button {
   line-height: 1.45;
 }
 
+.data-audit {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.data-audit summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.data-audit dl {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+}
+
+.data-audit div {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.data-audit dt {
+  color: var(--muted);
+}
+
+.data-audit dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .ticker-news {
   border-top: 1px solid var(--line);
   padding-top: 10px;
@@ -510,6 +542,11 @@ button {
   .news-meta {
     flex-direction: column;
     gap: 4px;
+  }
+
+  .data-audit div {
+    grid-template-columns: 1fr;
+    gap: 2px;
   }
 
   .chart {
