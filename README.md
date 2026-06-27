@@ -81,6 +81,9 @@ Convenzione versioni:
 La prima versione funziona anche senza chiavi API, usando dati demo. Per dati reali configura una sorgente prezzi/news nel file dell'add-on o tramite variabili ambiente:
 
 - `DATA_MODE=live` oppure `DATA_MODE=demo`
+- `MARKET_DATA_PROVIDER=yahoo` oppure `alpha_vantage`
+- `FALLBACK_MARKET_DATA_PROVIDER=none`, `yahoo` oppure `alpha_vantage`
+- `ALPHA_VANTAGE_API_KEY` per abilitare Alpha Vantage nelle prossime integrazioni dati
 - `NEWS_RSS_URLS` con URL RSS separati da virgola
 
 `live` e' la modalita' predefinita per le nuove installazioni. Se un'installazione esistente mantiene `data_mode: demo` nelle opzioni Home Assistant, cambiala manualmente in `live` dalla pagina di configurazione dell'add-on.

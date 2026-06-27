@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.4
+
+- Add configurable market data provider options in the add-on configuration.
+- Add Alpha Vantage API key field for the next provider integration step.
+- Add fallback provider option for future source comparison and reliability checks.
+
 ## 0.5.3
 
 - Add per-ticker data audit details for source troubleshooting.
