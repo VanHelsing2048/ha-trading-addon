@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.models import HistoryPoint, Quote, Signal, SymbolSearchResult, Ticker, TickerCreate, TickerInsight
+from app.services.corporate_events import get_corporate_events
 from app.services.market_data import get_history, get_history_range, get_quote, normalize_range, search_symbols
 from app.services.news import get_news
 from app.services.signals import build_signal
@@ -97,6 +98,7 @@ async def api_overview(
             related_news = [item for item in all_news if symbol in item.symbols] or all_news
             signal = build_signal(symbol, quote, related_news)
             history = await get_history(symbol, days) if days is not None else await get_history_range(symbol, chart_range)
+            corporate_events = await get_corporate_events(symbol)
             range_change, range_change_percent = _range_performance(history)
             range_reason = _range_reason(chart_range, range_change, range_change_percent, quote.currency)
             if range_reason:
@@ -112,11 +114,13 @@ async def api_overview(
             first_close = None
             last_close = None
             calculation_note = None
+            corporate_events = None
         overview.append(
             {
                 "ticker": ticker,
                 "signal": signal,
                 "history": history,
+                "corporate_events": corporate_events,
                 "chart_source": signal.quote.source,
                 "chart_range": chart_range,
                 "chart_as_of": signal.quote.as_of,

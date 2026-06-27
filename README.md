@@ -20,6 +20,7 @@ Dashboard/add-on sperimentale per seguire titoli finanziari, leggere notizie gio
 - Quote e storico prezzi live tramite provider Yahoo Finance non ufficiale
 - Provider Alpha Vantage opzionale per quote, storico e ricerca simboli con API key
 - Fallback configurabile tra provider dati per ridurre errori temporanei o rate limit
+- Date opzionali di prossimi utili, dividendo ed ex-dividendo tramite Alpha Vantage
 - Notizie generali e notizie collegate ai singoli titoli, con fonte e link apribile
 - Performance calcolata sul range selezionato, separata dalla variazione giornaliera
 - Le percentuali mostrate nelle card sono relative solo al range selezionato
@@ -102,6 +103,7 @@ Note sui dati:
 - Yahoo Finance e' usato tramite endpoint pubblici non ufficiali.
 - Alpha Vantage applica limiti di chiamate, soprattutto sui piani gratuiti.
 - Alpha Vantage viene trattato come sorgente USD per quote e storico; i valori EUR sono derivati dal cambio EUR/USD mostrato nella dashboard.
+- Utili e dividendi sono letti da Alpha Vantage quando `ALPHA_VANTAGE_API_KEY` e' configurata; senza chiave la card mostra il dato come non disponibile.
 - La dashboard mostra sempre sorgente, ora di lettura, range, numero punti e formula usata per la percentuale.
 
 ## Persistenza

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.6
+
+- Add optional Alpha Vantage corporate events for upcoming earnings, dividend date and ex-dividend date.
+- Show corporate event source and unavailable-state notes in each ticker card.
+- Keep corporate events non-blocking when the Alpha Vantage API key is missing or a provider call fails.
+
 ## 0.5.5
 
 - Add Alpha Vantage quote, history and symbol search integration when an API key is configured.

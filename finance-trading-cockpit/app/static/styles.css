@@ -356,6 +356,42 @@ button {
   line-height: 1.45;
 }
 
+.corporate-events {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.corporate-events div {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 9px;
+  min-width: 0;
+}
+
+.corporate-events span,
+.corporate-events small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.corporate-events strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.corporate-events a {
+  color: #6be0ad;
+  text-decoration: none;
+}
+
+.corporate-events small {
+  grid-column: 1 / -1;
+}
+
 .data-audit {
   border-top: 1px solid var(--line);
   padding-top: 10px;
@@ -538,6 +574,10 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .corporate-events {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .chart-meta,
   .news-meta {
     flex-direction: column;
@@ -561,7 +601,8 @@ button {
 
 @media (max-width: 390px) {
   .summary-grid,
-  .metric-row {
+  .metric-row,
+  .corporate-events {
     grid-template-columns: 1fr;
   }
 
