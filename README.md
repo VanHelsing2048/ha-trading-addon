@@ -11,6 +11,7 @@ Dashboard/add-on sperimentale per seguire titoli finanziari, leggere notizie gio
 - UI web leggera servita dall'add-on
 - Watchlist persistente in SQLite nel volume privato `/data` dell'add-on
 - Endpoint per aggiungere/rimuovere ticker
+- Nessun ticker precompilato: la watchlist contiene solo i titoli che aggiungi tu
 - Range grafico stile trading app: oggi, 1 settimana, 1 mese, 1 anno, totale
 - Scala prezzi, fonte dati, link sorgente e ora aggiornamento visibili su ogni grafico
 - Prezzi gestiti con doppio valore EUR/USD e cambio EUR/USD visibile
@@ -18,10 +19,8 @@ Dashboard/add-on sperimentale per seguire titoli finanziari, leggere notizie gio
 - Filtro rapido della watchlist
 - Autocomplete ticker con ricerca simboli reali
 - Quote e storico prezzi live tramite provider Yahoo Finance non ufficiale
-- Provider Alpha Vantage opzionale per quote, storico e ricerca simboli con API key
-- Fallback configurabile tra provider dati per ridurre errori temporanei o rate limit
-- Date opzionali di prossimi utili, dividendo ed ex-dividendo tramite Alpha Vantage
 - Notizie generali e notizie collegate ai singoli titoli, con fonte e link apribile
+- Nessuna notizia generata: se non configuri RSS reali, la dashboard mostra che non ci sono notizie
 - Performance calcolata sul range selezionato, separata dalla variazione giornaliera
 - Le percentuali mostrate nelle card sono relative solo al range selezionato
 - Audit dati per titolo con fonte, range, punti, primo/ultimo close e formula percentuale
@@ -79,31 +78,20 @@ Convenzione versioni:
 - minor, esempio `0.3.0`: nuove funzionalita';
 - major, esempio `1.0.0`: cambi incompatibili o prima versione stabile.
 
-## Configurazione provider
+## Configurazione dati
 
-L'add-on puo' usare Yahoo Finance non ufficiale senza chiavi API oppure Alpha Vantage con API key. Configura le sorgenti nella pagina opzioni dell'add-on o tramite variabili ambiente:
+L'add-on non richiede API key o abbonamenti. In modalita' `live` usa Yahoo Finance tramite endpoint pubblici non ufficiali per prezzi, ricerca simboli e storico.
 
 - `DATA_MODE=live` oppure `DATA_MODE=demo`
-- `MARKET_DATA_PROVIDER=yahoo` oppure `alpha_vantage`
-- `FALLBACK_MARKET_DATA_PROVIDER=none`, `yahoo` oppure `alpha_vantage`
-- `ALPHA_VANTAGE_API_KEY` per abilitare Alpha Vantage
 - `NEWS_RSS_URLS` con URL RSS separati da virgola
 
 `live` e' la modalita' predefinita per le nuove installazioni. Se un'installazione esistente mantiene `data_mode: demo` nelle opzioni Home Assistant, cambiala manualmente in `live` dalla pagina di configurazione dell'add-on.
 
-Se scegli `alpha_vantage` senza API key, il provider fallisce in modo esplicito. Per evitare dashboard vuota puoi impostare:
-
-```text
-MARKET_DATA_PROVIDER=alpha_vantage
-FALLBACK_MARKET_DATA_PROVIDER=yahoo
-```
-
 Note sui dati:
 
 - Yahoo Finance e' usato tramite endpoint pubblici non ufficiali.
-- Alpha Vantage applica limiti di chiamate, soprattutto sui piani gratuiti.
-- Alpha Vantage viene trattato come sorgente USD per quote e storico; i valori EUR sono derivati dal cambio EUR/USD mostrato nella dashboard.
-- Utili e dividendi sono letti da Alpha Vantage quando `ALPHA_VANTAGE_API_KEY` e' configurata; senza chiave la card mostra il dato come non disponibile.
+- Le notizie arrivano solo dagli RSS configurati in `NEWS_RSS_URLS`.
+- Se non ci sono RSS o risultati pertinenti, non vengono generate notizie demo.
 - La dashboard mostra sempre sorgente, ora di lettura, range, numero punti e formula usata per la percentuale.
 
 ## Persistenza
@@ -112,12 +100,11 @@ Note sui dati:
 - La watchlist resta disponibile dopo riavvio dell'add-on o di Home Assistant.
 - Le notizie vengono lette dalle fonti configurate e mostrate in dashboard; la cache persistente delle news e' prevista per una versione successiva.
 
-Provider reali da valutare nelle prossime iterazioni:
+Fonti gratuite da valutare nelle prossime iterazioni:
 
-- Yahoo Finance non ufficiale / yfinance
-- Finnhub
-- Financial Modeling Prep
-- RSS finanziari
+- RSS ufficiali o editoriali affidabili.
+- Calendari societari pubblici senza chiave, solo se tecnicamente stabili.
+- Eventuali provider con piano gratuito, ma solo come opzione avanzata e mai obbligatoria.
 
 ## Struttura
 

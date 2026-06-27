@@ -70,17 +70,6 @@ function formatDateTime(value) {
   }).format(date);
 }
 
-function formatDate(value) {
-  if (!value) return "n/d";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("it-IT", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(date);
-}
-
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -162,7 +151,6 @@ function insightCard(item) {
         <div class="metric"><span class="muted">${escapeHtml(rangeLabel(chartRange || activeRange))}</span><strong class="${rangeClass}">${formatPercent(item.range_change_percent)}</strong></div>
         <div class="metric"><span class="muted">Score</span><strong>${signal.score}</strong></div>
       </div>
-      ${corporateEventsBlock(item.corporate_events)}
       <div class="reason-line">${signal.reasons.map(escapeHtml).join(" - ")}</div>
       <details class="data-audit">
         <summary>Audit dati</summary>
@@ -179,30 +167,8 @@ function insightCard(item) {
   `;
 }
 
-function corporateEventsBlock(events) {
-  if (!events) return "";
-  const sourceUrl = events.source_url || "";
-  const source = events.source === "alpha_vantage" ? "Alpha Vantage" : "Non disponibile";
-  const sourceMarkup = sourceUrl
-    ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(source)}</a>`
-    : escapeHtml(source);
-  const notes = events.notes?.length
-    ? `<small>${events.notes.map(escapeHtml).join(" - ")}</small>`
-    : "";
-  return `
-    <div class="corporate-events">
-      <div><span>Utili</span><strong>${escapeHtml(formatDate(events.next_earnings_date))}</strong></div>
-      <div><span>Dividendo</span><strong>${escapeHtml(formatDate(events.dividend_date))}</strong></div>
-      <div><span>Ex-div.</span><strong>${escapeHtml(formatDate(events.ex_dividend_date))}</strong></div>
-      <div><span>Fonte</span><strong>${sourceMarkup}</strong></div>
-      ${notes}
-    </div>
-  `;
-}
-
 function sourceName(source) {
   if (source === "yahoo") return "Fonte grafico: Yahoo Finance";
-  if (source === "alpha_vantage") return "Fonte grafico: Alpha Vantage";
   if (source === "demo") return "Fonte grafico: demo";
   if (source === "unavailable") return "Fonte grafico: non disponibile";
   return `Fonte grafico: ${source || "sconosciuta"}`;

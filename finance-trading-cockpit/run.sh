@@ -16,24 +16,6 @@ with open('/data/options.json', 'r', encoding='utf-8') as f:
     print(json.load(f).get('news_rss_urls', ''))
 PY
 )"
-  export MARKET_DATA_PROVIDER="$(python - <<'PY'
-import json
-with open('/data/options.json', 'r', encoding='utf-8') as f:
-    print(json.load(f).get('market_data_provider', 'yahoo'))
-PY
-)"
-  export FALLBACK_MARKET_DATA_PROVIDER="$(python - <<'PY'
-import json
-with open('/data/options.json', 'r', encoding='utf-8') as f:
-    print(json.load(f).get('fallback_market_data_provider', 'none'))
-PY
-)"
-  export ALPHA_VANTAGE_API_KEY="$(python - <<'PY'
-import json
-with open('/data/options.json', 'r', encoding='utf-8') as f:
-    print(json.load(f).get('alpha_vantage_api_key', ''))
-PY
-)"
 fi
 
 export DB_PATH="${DB_PATH:-/data/finance_trading_cockpit.sqlite3}"

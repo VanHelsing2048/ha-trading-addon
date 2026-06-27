@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.7
+
+- Remove Alpha Vantage from the Home Assistant add-on configuration so no API key is requested.
+- Disable corporate events that depended on Alpha Vantage.
+- Stop returning demo news when no RSS source is configured.
+- Stop seeding sample tickers on first startup.
+- Keep live market data on Yahoo Finance only and show unavailable data instead of generated content.
+
 ## 0.5.6
 
 - Add optional Alpha Vantage corporate events for upcoming earnings, dividend date and ex-dividend date.

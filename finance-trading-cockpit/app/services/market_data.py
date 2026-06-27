@@ -12,11 +12,9 @@ from app.models import HistoryPoint, Quote, SymbolSearchResult
 YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 YAHOO_SEARCH_URL = "https://query2.finance.yahoo.com/v1/finance/search"
 YAHOO_QUOTE_PAGE_URL = "https://finance.yahoo.com/quote/{symbol}"
-ALPHA_VANTAGE_URL = "https://www.alphavantage.co/query"
-ALPHA_VANTAGE_SOURCE_URL = "https://www.alphavantage.co/"
 HTTP_TIMEOUT = 8.0
 EUR_USD_SYMBOL = "EURUSD=X"
-SUPPORTED_PROVIDERS = {"yahoo", "alpha_vantage"}
+SUPPORTED_PROVIDERS = {"yahoo"}
 
 
 def _stable_rng(symbol: str) -> random.Random:
@@ -71,13 +69,6 @@ async def search_symbols(query: str, limit: int = 8) -> list[SymbolSearchResult]
     if len(clean_query) < 2:
         return []
 
-    if _provider_name() == "alpha_vantage" and _alpha_vantage_api_key():
-        try:
-            return await _search_alpha_vantage_symbols(clean_query, limit)
-        except Exception:
-            if _fallback_provider_name() != "yahoo":
-                raise
-
     return await _search_yahoo_symbols(clean_query, limit)
 
 
@@ -103,28 +94,6 @@ async def _search_yahoo_symbols(query: str, limit: int = 8) -> list[SymbolSearch
                 exchange=item.get("exchange"),
                 quote_type=item.get("quoteType"),
                 sector=item.get("sector"),
-            )
-        )
-    return results
-
-
-async def _search_alpha_vantage_symbols(query: str, limit: int = 8) -> list[SymbolSearchResult]:
-    payload = await _get_alpha_vantage_payload({
-        "function": "SYMBOL_SEARCH",
-        "keywords": query,
-    })
-    results = []
-    for item in payload.get("bestMatches", [])[:limit]:
-        symbol = item.get("1. symbol")
-        if not symbol:
-            continue
-        results.append(
-            SymbolSearchResult(
-                symbol=symbol,
-                name=item.get("2. name"),
-                exchange=item.get("4. region"),
-                quote_type=item.get("3. type"),
-                sector=None,
             )
         )
     return results
@@ -205,28 +174,6 @@ async def _get_yahoo_quote(symbol: str) -> Quote:
     ), eur_usd_rate)
 
 
-async def _get_alpha_vantage_quote(symbol: str) -> Quote:
-    payload = await _get_alpha_vantage_payload({
-        "function": "GLOBAL_QUOTE",
-        "symbol": symbol.upper(),
-    })
-    quote = payload.get("Global Quote") or {}
-    price = quote.get("05. price")
-    if not price:
-        raise ValueError(f"No Alpha Vantage quote available for {symbol}")
-
-    return _with_currency_values(Quote(
-        symbol=symbol.upper(),
-        price=round(float(price), 2),
-        currency="USD",
-        change_percent=_parse_alpha_percent(quote.get("10. change percent")),
-        volume=int(float(quote.get("06. volume") or 0)),
-        source="alpha_vantage",
-        as_of=datetime.now(UTC).isoformat(),
-        source_url=ALPHA_VANTAGE_SOURCE_URL,
-    ), await _get_eur_usd_rate())
-
-
 async def _get_yahoo_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
     days = max(7, min(days, 365))
     period2 = int(time.time())
@@ -252,16 +199,6 @@ async def _get_yahoo_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
 
     if not points:
         raise ValueError(f"No historical prices available for {symbol}")
-    return points[-days:]
-
-
-async def _get_alpha_vantage_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
-    range_key = "1M"
-    if days <= 7:
-        range_key = "1W"
-    elif days >= 365:
-        range_key = "1Y"
-    points = await _get_alpha_vantage_history_range(symbol, range_key)
     return points[-days:]
 
 
@@ -294,45 +231,6 @@ async def _get_yahoo_history_range(symbol: str, range_key: str) -> list[HistoryP
     return points
 
 
-async def _get_alpha_vantage_history_range(symbol: str, range_key: str) -> list[HistoryPoint]:
-    if range_key == "1D":
-        payload = await _get_alpha_vantage_payload({
-            "function": "TIME_SERIES_INTRADAY",
-            "symbol": symbol.upper(),
-            "interval": "5min",
-            "outputsize": "compact",
-        })
-        series = payload.get("Time Series (5min)") or {}
-    else:
-        outputsize = "full" if range_key in {"1Y", "ALL"} else "compact"
-        payload = await _get_alpha_vantage_payload({
-            "function": "TIME_SERIES_DAILY",
-            "symbol": symbol.upper(),
-            "outputsize": outputsize,
-        })
-        series = payload.get("Time Series (Daily)") or {}
-
-    if not series:
-        raise ValueError(f"No Alpha Vantage historical prices available for {symbol}")
-
-    eur_usd_rate = await _get_eur_usd_rate()
-    cutoff = _range_cutoff(range_key)
-    points = []
-    for label, item in sorted(series.items()):
-        moment = _parse_alpha_timestamp(label)
-        if cutoff and moment < cutoff:
-            continue
-        close = item.get("5. adjusted close") or item.get("4. close")
-        if not close:
-            continue
-        point_label = moment.isoformat() if range_key == "1D" else moment.date().isoformat()
-        points.append(_history_point(point_label, round(float(close), 2), "USD", eur_usd_rate))
-
-    if not points:
-        raise ValueError(f"No Alpha Vantage historical prices available for {symbol}")
-    return points
-
-
 async def _get_yahoo_chart(
     symbol: str,
     range_value: str | None,
@@ -353,27 +251,6 @@ async def _get_yahoo_chart(
         )
         response.raise_for_status()
         return response.json()
-
-
-async def _get_alpha_vantage_payload(params: dict[str, str]) -> dict:
-    api_key = _alpha_vantage_api_key()
-    if not api_key:
-        raise ValueError("Alpha Vantage provider requires alpha_vantage_api_key")
-
-    request_params = {**params, "apikey": api_key}
-    async with httpx.AsyncClient(timeout=HTTP_TIMEOUT, follow_redirects=True) as client:
-        response = await client.get(
-            ALPHA_VANTAGE_URL,
-            params=request_params,
-            headers={"User-Agent": "ha-trading-addon/0.5"},
-        )
-        response.raise_for_status()
-        payload = response.json()
-
-    message = payload.get("Error Message") or payload.get("Note") or payload.get("Information")
-    if message:
-        raise ValueError(str(message))
-    return payload
 
 
 async def _with_provider_fallback(operation: str, symbol: str, *args):
@@ -398,58 +275,23 @@ async def _with_provider_fallback(operation: str, symbol: str, *args):
 
 
 async def _provider_quote(provider: str, symbol: str) -> Quote:
-    if provider == "alpha_vantage":
-        return await _get_alpha_vantage_quote(symbol)
     return await _get_yahoo_quote(symbol)
 
 
 async def _provider_history(provider: str, symbol: str, days: int = 30) -> list[HistoryPoint]:
-    if provider == "alpha_vantage":
-        return await _get_alpha_vantage_history(symbol, days)
     return await _get_yahoo_history(symbol, days)
 
 
 async def _provider_history_range(provider: str, symbol: str, range_key: str) -> list[HistoryPoint]:
-    if provider == "alpha_vantage":
-        return await _get_alpha_vantage_history_range(symbol, range_key)
     return await _get_yahoo_history_range(symbol, range_key)
 
 
 def _provider_name() -> str:
-    provider = os.environ.get("MARKET_DATA_PROVIDER", "yahoo").strip().lower()
-    return provider if provider in SUPPORTED_PROVIDERS else "yahoo"
+    return "yahoo"
 
 
 def _fallback_provider_name() -> str:
-    provider = os.environ.get("FALLBACK_MARKET_DATA_PROVIDER", "none").strip().lower()
-    return provider if provider in SUPPORTED_PROVIDERS or provider == "none" else "none"
-
-
-def _alpha_vantage_api_key() -> str:
-    return os.environ.get("ALPHA_VANTAGE_API_KEY", "").strip()
-
-
-def _parse_alpha_percent(value: str | None) -> float:
-    if not value:
-        return 0.0
-    return round(float(value.replace("%", "").strip()), 2)
-
-
-def _parse_alpha_timestamp(value: str) -> datetime:
-    if " " in value:
-        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
-    return datetime.strptime(value, "%Y-%m-%d").replace(tzinfo=UTC)
-
-
-def _range_cutoff(range_key: str) -> datetime | None:
-    now = datetime.now(UTC)
-    return {
-        "1D": now - timedelta(days=1),
-        "1W": now - timedelta(days=7),
-        "1M": now - timedelta(days=31),
-        "1Y": now - timedelta(days=366),
-        "ALL": None,
-    }[range_key]
+    return "none"
 
 
 def _first_chart_result(payload: dict) -> dict:

@@ -1,28 +1,8 @@
 import os
-from datetime import datetime, timezone
 
 import feedparser
 
 from app.models import NewsItem
-
-
-DEFAULT_DEMO_NEWS = [
-    {
-        "title": "Mercati cauti in attesa dei prossimi dati macro",
-        "summary": "Gli investitori restano selettivi sui settori piu esposti ai tassi.",
-        "source": "demo",
-    },
-    {
-        "title": "Tecnologia in focus dopo nuovi ordini nel comparto AI",
-        "summary": "Il sentiment rimane positivo, ma le valutazioni sono sotto osservazione.",
-        "source": "demo",
-    },
-    {
-        "title": "Energia volatile tra scorte e tensioni geopolitiche",
-        "summary": "Il settore mostra movimenti rapidi e rischio elevato.",
-        "source": "demo",
-    },
-]
 
 
 async def get_news(symbols: list[str], query: str | None = None) -> list[NewsItem]:
@@ -54,22 +34,4 @@ async def get_news(symbols: list[str], query: str | None = None) -> list[NewsIte
     if items:
         return items[:100]
 
-    demo_items = []
-    now = datetime.now(timezone.utc).isoformat()
-    for raw in DEFAULT_DEMO_NEWS:
-        title = raw["title"]
-        summary = raw["summary"]
-        if query and query.lower() not in f"{title} {summary}".lower():
-            continue
-        demo_items.append(
-            NewsItem(
-                title=title,
-                link="#",
-                source=raw["source"],
-                published=now,
-                summary=summary,
-                symbols=symbols[:3],
-            )
-        )
-    return demo_items
-
+    return []

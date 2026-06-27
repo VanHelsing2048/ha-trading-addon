@@ -42,22 +42,10 @@ class HistoryPoint(BaseModel):
     close_usd: float | None = None
 
 
-class CorporateEvents(BaseModel):
-    symbol: str
-    next_earnings_date: str | None = None
-    dividend_date: str | None = None
-    ex_dividend_date: str | None = None
-    source: str = "unavailable"
-    as_of: str | None = None
-    source_url: str | None = None
-    notes: list[str] = Field(default_factory=list)
-
-
 class TickerInsight(BaseModel):
     ticker: Ticker
     signal: "Signal"
     history: list[HistoryPoint]
-    corporate_events: CorporateEvents | None = None
     chart_source: str = "unknown"
     chart_range: str = "1M"
     chart_as_of: str | None = None
