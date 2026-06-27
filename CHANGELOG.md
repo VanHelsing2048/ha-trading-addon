@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.5
+
+- Add Alpha Vantage quote, history and symbol search integration when an API key is configured.
+- Add market data provider fallback logic so Yahoo can be used when Alpha Vantage is unavailable or rate-limited.
+- Keep provider source labels visible in the dashboard data audit.
+
 ## 0.5.4
 
 - Add configurable market data provider options in the add-on configuration.

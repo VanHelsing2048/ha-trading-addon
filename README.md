@@ -18,6 +18,8 @@ Dashboard/add-on sperimentale per seguire titoli finanziari, leggere notizie gio
 - Filtro rapido della watchlist
 - Autocomplete ticker con ricerca simboli reali
 - Quote e storico prezzi live tramite provider Yahoo Finance non ufficiale
+- Provider Alpha Vantage opzionale per quote, storico e ricerca simboli con API key
+- Fallback configurabile tra provider dati per ridurre errori temporanei o rate limit
 - Notizie generali e notizie collegate ai singoli titoli, con fonte e link apribile
 - Performance calcolata sul range selezionato, separata dalla variazione giornaliera
 - Le percentuali mostrate nelle card sono relative solo al range selezionato
@@ -78,15 +80,29 @@ Convenzione versioni:
 
 ## Configurazione provider
 
-La prima versione funziona anche senza chiavi API, usando dati demo. Per dati reali configura una sorgente prezzi/news nel file dell'add-on o tramite variabili ambiente:
+L'add-on puo' usare Yahoo Finance non ufficiale senza chiavi API oppure Alpha Vantage con API key. Configura le sorgenti nella pagina opzioni dell'add-on o tramite variabili ambiente:
 
 - `DATA_MODE=live` oppure `DATA_MODE=demo`
 - `MARKET_DATA_PROVIDER=yahoo` oppure `alpha_vantage`
 - `FALLBACK_MARKET_DATA_PROVIDER=none`, `yahoo` oppure `alpha_vantage`
-- `ALPHA_VANTAGE_API_KEY` per abilitare Alpha Vantage nelle prossime integrazioni dati
+- `ALPHA_VANTAGE_API_KEY` per abilitare Alpha Vantage
 - `NEWS_RSS_URLS` con URL RSS separati da virgola
 
 `live` e' la modalita' predefinita per le nuove installazioni. Se un'installazione esistente mantiene `data_mode: demo` nelle opzioni Home Assistant, cambiala manualmente in `live` dalla pagina di configurazione dell'add-on.
+
+Se scegli `alpha_vantage` senza API key, il provider fallisce in modo esplicito. Per evitare dashboard vuota puoi impostare:
+
+```text
+MARKET_DATA_PROVIDER=alpha_vantage
+FALLBACK_MARKET_DATA_PROVIDER=yahoo
+```
+
+Note sui dati:
+
+- Yahoo Finance e' usato tramite endpoint pubblici non ufficiali.
+- Alpha Vantage applica limiti di chiamate, soprattutto sui piani gratuiti.
+- Alpha Vantage viene trattato come sorgente USD per quote e storico; i valori EUR sono derivati dal cambio EUR/USD mostrato nella dashboard.
+- La dashboard mostra sempre sorgente, ora di lettura, range, numero punti e formula usata per la percentuale.
 
 ## Persistenza
 
@@ -94,10 +110,9 @@ La prima versione funziona anche senza chiavi API, usando dati demo. Per dati re
 - La watchlist resta disponibile dopo riavvio dell'add-on o di Home Assistant.
 - Le notizie vengono lette dalle fonti configurate e mostrate in dashboard; la cache persistente delle news e' prevista per una versione successiva.
 
-Provider reali da aggiungere nelle prossime iterazioni:
+Provider reali da valutare nelle prossime iterazioni:
 
 - Yahoo Finance non ufficiale / yfinance
-- Alpha Vantage
 - Finnhub
 - Financial Modeling Prep
 - RSS finanziari
