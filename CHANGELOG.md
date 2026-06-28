@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.8
+
+- Add a per-ticker quick readout with range trend, value change, data coverage, RSS news count and score meaning.
+- Show the exact Yahoo chart endpoint used for every graph in the data audit.
+- Show the effective Yahoo range and interval beside the selected dashboard range.
+
 ## 0.5.7
 
 - Remove Alpha Vantage from the Home Assistant add-on configuration so no API key is requested.

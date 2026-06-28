@@ -3,7 +3,14 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.models import HistoryPoint, Quote, Signal, SymbolSearchResult, Ticker, TickerCreate, TickerInsight
-from app.services.market_data import get_history, get_history_range, get_quote, normalize_range, search_symbols
+from app.services.market_data import (
+    get_history,
+    get_history_range,
+    get_history_source_url,
+    get_quote,
+    normalize_range,
+    search_symbols,
+)
 from app.services.news import get_news
 from app.services.signals import build_signal
 from app.services.storage import add_ticker, delete_ticker, init_db, list_tickers
@@ -113,7 +120,7 @@ async def api_overview(
                 "chart_source": signal.quote.source,
                 "chart_range": chart_range,
                 "chart_as_of": signal.quote.as_of,
-                "chart_source_url": signal.quote.source_url,
+                "chart_source_url": get_history_source_url(symbol, chart_range) if history else signal.quote.source_url,
                 "range_change": range_change,
                 "range_change_percent": range_change_percent,
                 "history_points": len(history),

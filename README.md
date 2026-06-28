@@ -14,6 +14,8 @@ Dashboard/add-on sperimentale per seguire titoli finanziari, leggere notizie gio
 - Nessun ticker precompilato: la watchlist contiene solo i titoli che aggiungi tu
 - Range grafico stile trading app: oggi, 1 settimana, 1 mese, 1 anno, totale
 - Scala prezzi, fonte dati, link sorgente e ora aggiornamento visibili su ogni grafico
+- Link tecnico all'endpoint Yahoo usato per generare ogni grafico
+- Lettura rapida per ogni titolo con trend, variazione, copertura dati, notizie RSS e score
 - Prezzi gestiti con doppio valore EUR/USD e cambio EUR/USD visibile
 - Grafico selezionabile in EUR o USD
 - Filtro rapido della watchlist
@@ -90,6 +92,7 @@ L'add-on non richiede API key o abbonamenti. In modalita' `live` usa Yahoo Finan
 Note sui dati:
 
 - Yahoo Finance e' usato tramite endpoint pubblici non ufficiali.
+- Il range `1W` della dashboard usa il range Yahoo `5d` con intervallo `15m`; la UI mostra sempre range e intervallo effettivi.
 - Le notizie arrivano solo dagli RSS configurati in `NEWS_RSS_URLS`.
 - Se non ci sono RSS o risultati pertinenti, non vengono generate notizie demo.
 - La dashboard mostra sempre sorgente, ora di lettura, range, numero punti e formula usata per la percentuale.

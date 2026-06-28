@@ -112,7 +112,7 @@ function insightCard(item) {
   const sourceLink = sourceUrl
     ? `<a class="source-link" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(sourceLabel)}</a>`
     : escapeHtml(sourceLabel);
-  const sourceMeta = `${rangeLabel(chartRange || activeRange)} - aggiornato ${formatDateTime(item.chart_as_of || signal.quote.as_of)}`;
+  const sourceMeta = `${rangeLabel(chartRange || activeRange)} / Yahoo ${yahooRangeLabel(chartRange || activeRange)} - aggiornato ${formatDateTime(item.chart_as_of || signal.quote.as_of)}`;
   const fxMeta = signal.quote.eur_usd_rate ? `Cambio EUR/USD ${signal.quote.eur_usd_rate}` : "Cambio EUR/USD n/d";
   const relatedNews = signal.news?.length ? signal.news.slice(0, 3).map(newsItemCompact).join("") : `<p class="muted small">Nessuna notizia collegata.</p>`;
   const auditRows = [
@@ -121,10 +121,12 @@ function insightCard(item) {
     ["Primo close", item.first_close === null || item.first_close === undefined ? "n/d" : `${signal.quote.currency} ${formatPrice(item.first_close)}`],
     ["Ultimo close", item.last_close === null || item.last_close === undefined ? "n/d" : `${signal.quote.currency} ${formatPrice(item.last_close)}`],
     ["Calcolo", item.calculation_note || "n/d"],
+    ["Endpoint", sourceUrl || "n/d"],
   ];
   const chartMarkup = history.length
     ? `<canvas class="chart" width="640" height="260" data-history="${historyJson}" data-range="${escapeHtml(chartRange || activeRange)}" aria-label="Andamento ${escapeHtml(ticker.symbol)}"></canvas>`
     : `<div class="chart chart-empty">Storico reale non disponibile</div>`;
+  const quickReadout = quickReadoutBlock(item);
   return `
     <article class="signal insight-card">
       <header>
@@ -140,6 +142,7 @@ function insightCard(item) {
         <span>${escapeHtml(fxMeta)}</span>
         <span>${history.length ? `${escapeHtml(history.at(0).date)} -> ${escapeHtml(history.at(-1).date)}` : ""}</span>
       </div>
+      ${quickReadout}
       ${chartMarkup}
       <div class="metric-row">
         <div class="metric price-dual">
@@ -150,6 +153,7 @@ function insightCard(item) {
         </div>
         <div class="metric"><span class="muted">${escapeHtml(rangeLabel(chartRange || activeRange))}</span><strong class="${rangeClass}">${formatPercent(item.range_change_percent)}</strong></div>
         <div class="metric"><span class="muted">Score</span><strong>${signal.score}</strong></div>
+        <div class="metric"><span class="muted">Volume</span><strong>${formatVolume(signal.quote.volume)}</strong></div>
       </div>
       <div class="reason-line">${signal.reasons.map(escapeHtml).join(" - ")}</div>
       <details class="data-audit">
@@ -167,6 +171,66 @@ function insightCard(item) {
   `;
 }
 
+function quickReadoutBlock(item) {
+  const range = item.chart_range || activeRange;
+  const percent = item.range_change_percent;
+  const change = item.range_change;
+  const direction = trendDirection(percent);
+  const directionClass = trendClass(percent);
+  const currency = item.signal.quote.currency;
+  const newsCount = item.signal.news?.length || 0;
+  const dataStatus = dataCoverage(item.history_points ?? item.history?.length ?? 0, range);
+  const changeText = change === null || change === undefined ? "n/d" : `${currency} ${change >= 0 ? "+" : ""}${formatPrice(change)}`;
+  return `
+    <section class="quick-readout">
+      <div class="readout-main">
+        <span class="readout-label">Lettura ${escapeHtml(rangeLabel(range))}</span>
+        <strong class="${directionClass}">${escapeHtml(direction)} ${formatPercent(percent)}</strong>
+        <small>${escapeHtml(changeText)}</small>
+      </div>
+      <div class="readout-grid">
+        <div><span>Dati</span><strong>${escapeHtml(dataStatus)}</strong></div>
+        <div><span>Notizie</span><strong>${newsCount ? `${newsCount} RSS reali` : "nessuna RSS collegata"}</strong></div>
+        <div><span>Score</span><strong>${escapeHtml(scoreMeaning(item.signal.score))}</strong></div>
+      </div>
+    </section>
+  `;
+}
+
+function trendDirection(value) {
+  if (value === null || value === undefined) return "non disponibile";
+  if (value > 1) return "rialzo";
+  if (value < -1) return "ribasso";
+  return "stabile";
+}
+
+function trendClass(value) {
+  if (value === null || value === undefined) return "NeutralReadout";
+  if (value > 1) return "Bullish";
+  if (value < -1) return "Bearish";
+  return "NeutralReadout";
+}
+
+function dataCoverage(points, range) {
+  const thresholds = {
+    "1D": 12,
+    "1W": 5,
+    "1M": 15,
+    "1Y": 120,
+    ALL: 2,
+  };
+  const needed = thresholds[range] || 2;
+  if (!points) return "assenti";
+  if (points >= needed) return `buona (${points} punti)`;
+  return `limitata (${points} punti)`;
+}
+
+function scoreMeaning(score) {
+  if (score >= 65) return `positivo (${score}/100)`;
+  if (score <= 40) return `debole (${score}/100)`;
+  return `neutrale (${score}/100)`;
+}
+
 function sourceName(source) {
   if (source === "yahoo") return "Fonte grafico: Yahoo Finance";
   if (source === "demo") return "Fonte grafico: demo";
@@ -181,6 +245,16 @@ function rangeLabel(range) {
     "1M": "ultimo mese",
     "1Y": "ultimo anno",
     ALL: "totale",
+  }[range] || range;
+}
+
+function yahooRangeLabel(range) {
+  return {
+    "1D": "1d/5m",
+    "1W": "5d/15m",
+    "1M": "1mo/1d",
+    "1Y": "1y/1d",
+    ALL: "max/1mo",
   }[range] || range;
 }
 

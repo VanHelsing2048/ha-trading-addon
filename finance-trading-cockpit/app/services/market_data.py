@@ -3,6 +3,7 @@ import os
 import random
 import time
 from datetime import UTC, date, datetime, timedelta
+from urllib.parse import urlencode
 
 import httpx
 
@@ -43,6 +44,13 @@ async def get_history_range(symbol: str, range_key: str = "1M") -> list[HistoryP
         return await _demo_history(symbol, demo_days)
 
     return await _with_provider_fallback("history_range", symbol, clean_range)
+
+
+def get_history_source_url(symbol: str, range_key: str = "1M") -> str:
+    clean_range = normalize_range(range_key)
+    yahoo_range, interval = _yahoo_range_interval(clean_range)
+    params = urlencode({"range": yahoo_range, "interval": interval})
+    return f"{YAHOO_CHART_URL.format(symbol=symbol.upper())}?{params}"
 
 
 def normalize_range(range_key: str) -> str:
@@ -203,13 +211,7 @@ async def _get_yahoo_history(symbol: str, days: int = 30) -> list[HistoryPoint]:
 
 
 async def _get_yahoo_history_range(symbol: str, range_key: str) -> list[HistoryPoint]:
-    yahoo_range, interval = {
-        "1D": ("1d", "5m"),
-        "1W": ("5d", "15m"),
-        "1M": ("1mo", "1d"),
-        "1Y": ("1y", "1d"),
-        "ALL": ("max", "1mo"),
-    }[range_key]
+    yahoo_range, interval = _yahoo_range_interval(range_key)
     payload = await _get_yahoo_chart(symbol, yahoo_range, interval)
     result = _first_chart_result(payload)
     currency = str(result.get("meta", {}).get("currency") or "USD").upper()
@@ -229,6 +231,16 @@ async def _get_yahoo_history_range(symbol: str, range_key: str) -> list[HistoryP
     if not points:
         raise ValueError(f"No historical prices available for {symbol}")
     return points
+
+
+def _yahoo_range_interval(range_key: str) -> tuple[str, str]:
+    return {
+        "1D": ("1d", "5m"),
+        "1W": ("5d", "15m"),
+        "1M": ("1mo", "1d"),
+        "1Y": ("1y", "1d"),
+        "ALL": ("max", "1mo"),
+    }[range_key]
 
 
 async def _get_yahoo_chart(

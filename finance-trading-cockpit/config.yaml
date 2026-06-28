@@ -1,5 +1,5 @@
 name: Finance Trading Cockpit
-version: "0.5.7"
+version: "0.5.8"
 slug: finance_trading_cockpit
 description: Watchlist, news search and trading signals dashboard for Home Assistant.
 url: https://github.com/VanHelsing2048/ha-trading-addon

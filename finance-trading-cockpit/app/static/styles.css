@@ -356,6 +356,63 @@ button {
   line-height: 1.45;
 }
 
+.quick-readout {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.9fr) minmax(0, 2fr);
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(13, 17, 21, 0.62);
+  padding: 10px;
+}
+
+.readout-main,
+.readout-grid div {
+  min-width: 0;
+}
+
+.readout-label,
+.readout-grid span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.readout-main strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
+.readout-main small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+.readout-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.readout-grid div {
+  border-left: 1px solid var(--line);
+  padding-left: 8px;
+}
+
+.readout-grid strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.NeutralReadout {
+  color: #f0c36e;
+}
+
 .data-audit {
   border-top: 1px solid var(--line);
   padding-top: 10px;
@@ -536,6 +593,17 @@ button {
 
   .metric-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-readout,
+  .readout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .readout-grid div {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding: 7px 0 0;
   }
 
   .chart-meta,
